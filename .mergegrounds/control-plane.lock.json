@@ -2,11 +2,11 @@
   "files": {
     ".agents/plugins/marketplace.json": {
       "mode": "100644",
-      "sha256": "ad8f6701ef50d0208fe0a249909d440d5cf2752b4403bd9a03dfdec8f09f2aa4"
+      "sha256": "f878354675a25e9eac1aeb324f5b9d5aaef2fd193d0e202c28dbdfe905af3937"
     },
     ".codex-plugin/plugin.json": {
       "mode": "100644",
-      "sha256": "126300118df113038723acd6c4a605d149c69c9314d3bb442ce14e91291833bc"
+      "sha256": "1164f93310a36853eef6f21eb41fdb5e56e983355d958528b59d7bbf82933147"
     },
     ".coveragerc": {
       "mode": "100644",
@@ -18,7 +18,7 @@
     },
     ".github/CODEOWNERS": {
       "mode": "100644",
-      "sha256": "176ceb5c0928fbfdeb2a271f133ac0331969829bedd2a2af63f24e6571c3af1c"
+      "sha256": "7d7ba39e995ee25a11e9edf1714b45d3b841e99191f96b51b770380e6d44f367"
     },
     ".github/ISSUE_TEMPLATE/design-review.yml": {
       "mode": "100644",
@@ -38,23 +38,23 @@
     },
     ".github/pull_request_template.md": {
       "mode": "100644",
-      "sha256": "c8bb2521727781208b99e35bf94e2c8f930e161b17bfbefb4807873b2f26a697"
+      "sha256": "3c6cfcff4495d45253f3db0d3b1eeb76ec8ca6906050646ca3e790cf82e4e761"
     },
     ".github/workflows/codeql.yml": {
       "mode": "100644",
-      "sha256": "2919a67e04f8fb25da7b3e29a48107c0384c79ac48f18cb90de244577715cdc9"
+      "sha256": "873ae0feb38856ee5670903a95645f5eac100982f28d946437c8c2932763c7be"
     },
     ".github/workflows/full-scan.yml": {
       "mode": "100644",
-      "sha256": "1b7381a166af0f9320f3e2315f1a03552dcfa9d3f4eea03c87f0bb6fe40a1432"
+      "sha256": "bb18b0e0c38e0b57df38d6919a3faae6021ea11ff07d16c80a8d8b2de355cb78"
     },
     ".github/workflows/mergegrounds.yml": {
       "mode": "100644",
-      "sha256": "1467116a9bf8390e95ba7723de1cfeed823ef0117b61248fd9ef73c0007445ed"
+      "sha256": "5dd3aeafaf218ef0b4f6f5a97fc7e91a4952299c37595ba4648b1d019c8f0bc2"
     },
     ".github/workflows/release.yml": {
       "mode": "100644",
-      "sha256": "ef2b7a9d46b9fc93571acbe0544d412c56078b10ef8fae6543b681e64633ee58"
+      "sha256": "c7862fa4f2bc5437bdd7d40d98d67ab7b4b1f08d15cf9427eb087963eb04dd7e"
     },
     ".github/workflows/scorecard.yml": {
       "mode": "100644",
@@ -62,7 +62,7 @@
     },
     ".gitignore": {
       "mode": "100644",
-      "sha256": "dc112b93d17ec376547844c104b199fe2297d2b7b72a81d9a8ce21c8bd698f8a"
+      "sha256": "818a55a76323e7478c3a99869750de9f005f50b589f1a64c89a2c11fdc1827f1"
     },
     ".mergegrounds/LICENSE.mergegrounds": {
       "mode": "100644",
@@ -70,7 +70,7 @@
     },
     ".mergegrounds/README.mergegrounds.md": {
       "mode": "100644",
-      "sha256": "1421a3b909e50266e862d69f4b4b27ffbec79632b56874855db6794afc95de38"
+      "sha256": "ac0ec00f3eefea5d353037adfa9eaf10b19600d70c5a9251b6908d5c1b4723f3"
     },
     ".mergegrounds/adapters/dotnet.toml": {
       "mode": "100644",
@@ -78,11 +78,11 @@
     },
     ".mergegrounds/adapters/generic-custom.toml": {
       "mode": "100644",
-      "sha256": "4310a65526ac0feaf1096e35d2449bb442a7e7334ccc8d420de22c6bc400da39"
+      "sha256": "064b6ea5c5310cd2128fd43f6940621d9e63c58d85335902701ef8bc8a5ce6f4"
     },
     ".mergegrounds/adapters/go.toml": {
       "mode": "100644",
-      "sha256": "45df6f8e82052143e7894c8396b9265ef44db947f2955362c6ff36152759cea9"
+      "sha256": "e96f5744c8e0821f78de3d24b1a1a26520e1fa6a4fd678388f7b05a2fe40cdc2"
     },
     ".mergegrounds/adapters/jvm-gradle.toml": {
       "mode": "100644",
@@ -106,15 +106,15 @@
     },
     ".mergegrounds/adapters/rust.toml": {
       "mode": "100644",
-      "sha256": "6748c6e079cc99bc87942ea4ca5f4fdd9d8ef57d4b1d780f14bcf044f1997b48"
+      "sha256": "f65f038d17bf1fc525a7fa6d4421572a40bc2bacb7a23f214d83a55fa6bc82b0"
     },
     ".mergegrounds/ai-assurance.toml": {
       "mode": "100644",
-      "sha256": "b0d8217850f2f81223193389180da50cc1ab5d6152f762fbb83137c5e3ea730c"
+      "sha256": "88fa9216a916066175f14b1ef63755696e206015ede1c6493a6e37d530c72d8f"
     },
     ".mergegrounds/changes/README.md": {
       "mode": "100644",
-      "sha256": "28a47c5d3201783eebebaabc1359603c5535af03dcc8d57e2a347d18f994735a"
+      "sha256": "3cc9aab84771c41ea40e10d3b15a6f7d52ca28fb576ec5f19fdd2bbdaaaab158"
     },
     ".mergegrounds/custom.enabled": {
       "mode": "100644",
@@ -122,11 +122,11 @@
     },
     ".mergegrounds/exceptions.toml": {
       "mode": "100644",
-      "sha256": "17fcc0c4cd5c7f5be0656dbd5bec4df8cf8d5372f3bf0df1234996c871bf4d81"
+      "sha256": "66124ccb8b7071e29eb0505d416894ecebcb8860d99ca02b132e3bc829dccf34"
     },
     ".mergegrounds/mergegrounds.toml": {
       "mode": "100644",
-      "sha256": "cdff5cce1b55c9b503eb42b87c8f18b14de9dc808751ff53575c967748036b99"
+      "sha256": "cf03264b609d56ff7d660cc209f0fc7ddf24649a1ab1f3a03cfea762b832f386"
     },
     ".mergegrounds/profiles/fast.toml": {
       "mode": "100644",
@@ -142,31 +142,31 @@
     },
     ".mergegrounds/schemas/ai-assurance.example.toml": {
       "mode": "100644",
-      "sha256": "f122966b99c1118dff9ea4b48616ce6125a33b5dd6dc4207be2282e46361fd3d"
+      "sha256": "7afd77002e03827de1560011acdd26af2e553018c2d7a1c739f382e1f806bdf5"
     },
     ".pre-commit-config.yaml": {
       "mode": "100644",
-      "sha256": "9a945711899b498387c2d2b93121460136c10cafc639a204399f5d653311354b"
+      "sha256": "a801e442497f86aaf0763435145903fc59397fc84cd0ff35a39363405e48b1bf"
     },
     "SECURITY.md": {
       "mode": "100644",
-      "sha256": "6bb50ba2cdc538681cd93a80ea3826914c3d53f51a11092fd2438c67e247858f"
+      "sha256": "a534d8388a254ac56056644fc083c9390cc184077678f090a5258823362cd543"
     },
     "VERSION": {
       "mode": "100644",
-      "sha256": "c28fcca53637bc88e124af1725df13cb98c69dedefd62fb3cdbe1cdb6b760624"
+      "sha256": "59854984853104df5c353e2f681a15fc7924742f9a2e468c29af248dce45ce03"
     },
     "docs/decisions/README.md": {
       "mode": "100644",
-      "sha256": "bdb1b97aa88554c2b7609e3873816b752a08e50270f3b33f6bfdaba8a313856d"
+      "sha256": "6925e3d94de6a8f5bb96afbbf81dc8d4bf4cede69cfa70da5de00166fbd9e33f"
     },
     "mergegrounds-custom": {
       "mode": "100755",
-      "sha256": "47e27af9be946f08e7997b04a361c647d84f489d987a98cb861d8f6c16f33776"
+      "sha256": "1e12dda7130ce28b6e14bec70a4be217a1b0564639fa2458a11855ce8ec6f962"
     },
     "requirements-self.in": {
       "mode": "100644",
-      "sha256": "ab53707b3848b02f4cab5514074c6d48f2829fc9a3e17f17c8ec92e71be1f601"
+      "sha256": "2c6d5eb462cb5af1061c6dc342df043ee76f5078fed3acc6c19e676359b9b4f6"
     },
     "requirements-self.lock": {
       "mode": "100644",
@@ -174,86 +174,86 @@
     },
     "scripts/ai_assurance.py": {
       "mode": "100755",
-      "sha256": "7de7f4b6eede3516c636926a4beff3a76d8cf4a3768c7f01302e2b2a36ccb58e"
+      "sha256": "f87ffafcb7b55f871f30cea4260c8dde5cebc995285cad14904f04059b02ec2d"
     },
     "scripts/apply-github-ruleset.sh": {
       "mode": "100755",
-      "sha256": "cbc8d0b86dd77b8d175a41498a8d66bee0a04551223174dcfb3a559185c46488"
+      "sha256": "0ede4342ef220f09b2148101fe8edbd969edfd843c0863dbf9d8069d5b0153e2"
     },
     "scripts/bootstrap.py": {
       "mode": "100755",
-      "sha256": "a1a2cbf614d266ce90459711a25a1a5321ef16726e7e662aa973fe9b747c1f91"
+      "sha256": "8423da5d45609a2d59b8b5e2e1362da8afe25c058a1be0f74e43d48e4671b24e"
     },
     "scripts/build_release.py": {
       "mode": "100644",
-      "sha256": "668b85e7f775900cde34bdeaf1f42875b10393227f5b8aad5d533e289677b078"
-    },
-    "scripts/mergegrounds.py": {
-      "mode": "100755",
-      "sha256": "bf9af952872841f1ace495de84df9aa25ad89423c4bb9bc3c19cea50742b7888"
+      "sha256": "4fa9aba0ae91eb3e89b64505ecedb3467ebc7dbd40a2127149f1a31f5f7a6936"
     },
     "scripts/manage_plugin.py": {
       "mode": "100644",
-      "sha256": "c9ce4641889e2766f25a93974221e5671f2662783e523bf4dd578a6dd97f00ed"
+      "sha256": "85124e1bdfd66460473de24f8b63f3885e564e5dbacf30b5338b33fa9b77d4ad"
+    },
+    "scripts/mergegrounds.py": {
+      "mode": "100755",
+      "sha256": "e640c1b725298cdcbbbbdcccd6a83061b92ae84c02fb9b020df6e94603005040"
     },
     "scripts/scaffold_change.py": {
       "mode": "100755",
-      "sha256": "5dc4e5cefcf63e4b8fe48ae6688f38c2da8d2720ea7463393e7ab25ce0c6a3f8"
+      "sha256": "cfb89c45a794442a32d6aea0e24afaf5c74279ebb38102bb884ac2dcce571b43"
     },
     "scripts/self_check.py": {
       "mode": "100644",
-      "sha256": "a3a9af8ef6a1de19b1ff32a7f12bc1d1f1f1c188aad6082fd4ecd2a2b4091d1c"
+      "sha256": "c9e0a977a546a91981bb4cf392e5ff882b3a8f6757832cbd76304aa1d352693f"
     },
     "skills/mergegrounds/SKILL.md": {
       "mode": "100644",
-      "sha256": "578cac5c916608dfbfab0c0b1cdfd1f13f81042eaacedd2a989af77d21ba491b"
+      "sha256": "be30bb43ba618796a7418324eb9a652c5c3e655fceb2da8aed35f03b487cf4b1"
     },
     "skills/mergegrounds/agents/openai.yaml": {
       "mode": "100644",
-      "sha256": "ca27e2d8f80e2dfd377312fc486984a761760763b302abf2fd28a982a4cc6911"
+      "sha256": "017537e3d4045dd9e22fbd991017a78c06512352d77dd7117db1483741c7b3c7"
     },
     "skills/mergegrounds/references/ai-product-assurance.md": {
       "mode": "100644",
-      "sha256": "54408f73310c8172243eb9d211b219cf525cba66b81e4381a15995b412171949"
+      "sha256": "01404661a35a38d7befe74bfc6b9787fc66f688b34190a1e98dddceafb7c8188"
     },
     "skills/mergegrounds/references/control-model.md": {
       "mode": "100644",
-      "sha256": "152de1821398e2d857fdbcb67b819b8c459e2c6a92a95630f5ab41991d9a81bd"
+      "sha256": "72f33b30bc805b47ef9c6877469b26b100451af73f14d0224acb94c7eb86ffc1"
     },
     "skills/mergegrounds/references/evidence.md": {
       "mode": "100644",
-      "sha256": "622b89292797860e8fba79aa115b0ede7d5dbd5505f091399e6cd015892bacf2"
+      "sha256": "76430a4590210a6c4515ad12b6b0f993c8007febfbee3056c2a56b99dbf90279"
     },
     "skills/mergegrounds/references/exceptions.md": {
       "mode": "100644",
-      "sha256": "9284e4c64ae61755b7e878bbe714d2e08fcd44c92f0d376abde621700855e42c"
+      "sha256": "c4f242d86fd179d828b00b921de9070461daa55172c39d1b2ee8e73bbbbf5ab3"
     },
     "skills/mergegrounds/references/github-hardening.md": {
       "mode": "100644",
-      "sha256": "225d968d6df4db85ea31179ecb5bd7d6980dabb7a099e8448532ac53698a3984"
+      "sha256": "00260661838e2f9548c0bff51f38d4d535cb2826829a4c0b3649d64ef79402c8"
     },
     "skills/mergegrounds/references/mutation-testing.md": {
       "mode": "100644",
-      "sha256": "66068876d74bd86f07ece725b0c4ecbb68428a6c6849f4cda089534a0082a300"
+      "sha256": "7ed221e45330b96a379e259e50e78a96942864bb867adfdff550c10cf182b12e"
     },
     "skills/mergegrounds/references/stack-adapters.md": {
       "mode": "100644",
-      "sha256": "177ae1b9116a270f483ffeb0d67b1ac33e3bb9981978e069f672a66963b4b7ec"
+      "sha256": "f79d511b69a59f0233078c6192ffd25789837297e8beb31b9b86f1e03946d1f3"
     },
     "skills/mergegrounds/references/trusted-control-plane.md": {
       "mode": "100644",
-      "sha256": "58e50f122153c6c9c65be19ca4411d91c581b54c62321f924b9515f12eb248ed"
+      "sha256": "3047afe1d6fd67f2ef0593cc1eb977a39fbc10c188dd9f2043677b595ef80423"
     },
     "skills/mergegrounds/references/workflow.md": {
       "mode": "100644",
-      "sha256": "674815e2475bb01538f146d39fce055c1e930509bef385e2f665a6e1698d14f4"
+      "sha256": "f62e8b52503c2cbbaf9fcb5b46ea2a6c32eb8c9ed1219ff089dc4dc4db76bc15"
     },
     "templates/bootstrap/CODEOWNERS": {
       "mode": "100644",
-      "sha256": "9e99591e13aef952ddffafb7de9076c96f810e7482905e76bb78336414478368"
+      "sha256": "e8b7ed1d367d6179ba5cc50f7560071ddb6944760dfb3db17fc12129db5c13dc"
     }
   },
-  "generated_at": "2026-09-05T14:35:48Z",
-  "git_commit": "ea8a76d1994988038239b07aa278f11ecfec04f1",
+  "generated_at": "2026-09-05T14:55:53Z",
+  "git_commit": "873212ff295bf477df5e2533d595cfa4e2e33130",
   "schema_version": 2
 }
