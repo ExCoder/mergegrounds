@@ -21,8 +21,8 @@ suite can prove that.
 
 ## 90-second proof
 
-Run the already released, dependency-free educational model before installing
-the control plane:
+Run the already released, dependency-free educational model before previewing
+the Portable starter:
 
 ```bash
 git clone --branch v1.0.1 --depth 1 \
