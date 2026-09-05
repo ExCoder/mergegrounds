@@ -31,10 +31,11 @@ cd mergegrounds-demo
 python3 demo.py
 ```
 
-The final line must be:
+The final two lines must be:
 
 ```text
 DEMO PASSED: 1 admitted control; 5 negative controls denied
+Educational demo only — this is not a production assurance claim.
 ```
 
 The demo makes one narrow behavior reproducible: exact, complete evidence is

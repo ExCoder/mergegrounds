@@ -35,6 +35,7 @@ class PublicReleaseTests(unittest.TestCase):
             "https://github.com/ExCoder/mergegrounds-demo.git",
             "python3 demo.py",
             "DEMO PASSED: 1 admitted control; 5 negative controls denied",
+            "Educational demo only — this is not a production assurance claim.",
             "educational model",
             "v1.0.0",
             "Maximum Assurance",
