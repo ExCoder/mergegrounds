@@ -1,0 +1,166 @@
+{
+  "decisions": [
+    {
+      "alternatives": [
+        "Keep release evidence only in pull-request prose or workflow logs",
+        "Publish the release before independently reproducing every promotion claim"
+      ],
+      "choice": "Retain a versioned release-evidence document that binds every promotion gate to exact source, workflow, artifact, and verifier identities.",
+      "id": "DEC-RETAIN-BOUND-EVIDENCE",
+      "rationale": "A repository record is reviewable and durable, while exact immutable identities let an independent verifier reproduce claims without trusting the author or mutable branch state."
+    },
+    {
+      "alternatives": [
+        "Treat documentation checks as advisory after publishing",
+        "Allow a maintainer assertion to substitute for missing release evidence"
+      ],
+      "choice": "Fail closed before release publication when any recorded identity, digest, gate result, or retained artifact cannot be independently reproduced.",
+      "id": "DEC-DENY-ON-MISMATCH",
+      "rationale": "A release evidence record is useful only when absence, ambiguity, and mismatch block promotion rather than becoming accepted exceptions."
+    }
+  ],
+  "design_id": "6b029ec5-f510-4dde-9d82-c1b2ae7473cc",
+  "evaluation": {
+    "acceptance_criteria": [
+      {
+        "class": "positive",
+        "failure_behavior": "Any missing gate, unresolved identifier, or irreproducible result denies release publication.",
+        "id": "AC-RELEASE-EVIDENCE-COMPLETE",
+        "observable": "The versioned document records all required promotion gates and binds them to exact source commits, workflow runs, retained artifacts, checksums, and verifier identities.",
+        "oracle": {
+          "evidence_class": "independent_human",
+          "kind": "external_review",
+          "ref": "REVIEW-RELEASE-EVIDENCE-COMPLETENESS"
+        }
+      },
+      {
+        "class": "negative",
+        "failure_behavior": "Any accepted stale, mutable, unsigned, self-asserted, or mismatched reference denies release publication.",
+        "id": "AC-RELEASE-EVIDENCE-REJECTS-MISMATCH",
+        "observable": "A deliberately stale commit, mutable branch reference, mismatched checksum, missing artifact, or unverified identity is rejected and cannot be reported as a passing promotion gate.",
+        "oracle": {
+          "evidence_class": "trusted_execution",
+          "kind": "test",
+          "ref": "TEST-RELEASE-EVIDENCE-NEGATIVE"
+        }
+      },
+      {
+        "class": "adversarial",
+        "failure_behavior": "Any unresolved counterexample, unavailable retained input, or absent independent challenge denies release publication.",
+        "id": "AC-RELEASE-EVIDENCE-WITHSTANDS-CHALLENGE",
+        "observable": "An independent challenger reproduces each material provenance and integrity assertion from immutable GitHub state and retained artifact bytes without relying on author claims.",
+        "oracle": {
+          "evidence_class": "independent_human",
+          "kind": "external_review",
+          "ref": "REVIEW-RELEASE-EVIDENCE-ADVERSARIAL"
+        }
+      },
+      {
+        "class": "recovery",
+        "failure_behavior": "If the prior verified state cannot be restored without publishing ambiguous evidence, the release remains quarantined.",
+        "id": "AC-RELEASE-EVIDENCE-RECOVERS-SAFELY",
+        "observable": "When a claim fails verification, publication remains blocked, the candidate is quarantined, and the last verified release state is preserved without rewriting retained evidence.",
+        "oracle": {
+          "evidence_class": "trusted_execution",
+          "kind": "test",
+          "ref": "TEST-RELEASE-EVIDENCE-RECOVERY"
+        }
+      }
+    ],
+    "outcome_metrics": [
+      {
+        "baseline_window": "24h",
+        "direction": "not_regress",
+        "evidence_class": "external_verifier",
+        "failure_action": "deny_promotion",
+        "id": "METRIC-REPRODUCIBLE-RELEASE-ASSERTIONS",
+        "maximum_missing_percent": 0,
+        "minimum_samples": 20,
+        "observable": "Percentage of sampled release-evidence assertions reproduced successfully from immutable source state and retained artifacts.",
+        "observation_window": "24h",
+        "promotion_blocking": true,
+        "source": "Independent release verifier observations over exact commits, workflow runs, checksums, attestations, and retained artifact bytes",
+        "target": 100,
+        "unit": "percent"
+      }
+    ]
+  },
+  "failure_modes": [
+    {
+      "condition": "A recorded source commit, workflow run, checksum, attestation, reviewer identity, or artifact differs from independently observed immutable state.",
+      "detection_ref": "TEST-RELEASE-EVIDENCE-NEGATIVE",
+      "expected_behavior": "The conflicting assertion is reported as non-passing, the candidate remains quarantined, and release publication is denied.",
+      "id": "FM-RELEASE-EVIDENCE-MISMATCH",
+      "rollback_trigger": "Any material identity or integrity mismatch triggers quarantine and restoration of the last verified release state."
+    },
+    {
+      "condition": "Required evidence is missing, expired, inaccessible, produced only by the candidate, or expressed through a mutable reference.",
+      "detection_ref": "REVIEW-RELEASE-EVIDENCE-ADVERSARIAL",
+      "expected_behavior": "The corresponding gate remains non-passing and neither prose nor maintainer confidence can substitute for independently reproducible evidence.",
+      "id": "FM-RELEASE-EVIDENCE-UNAVAILABLE",
+      "rollback_trigger": "Missing independently reproducible evidence prevents publication and preserves the previously verified state."
+    }
+  ],
+  "goals": [
+    "Make every v1.0.0 promotion decision independently reproducible from immutable identities and retained bytes",
+    "Prevent stale, mutable, missing, self-asserted, or mismatched release evidence from being reported as passing",
+    "Keep candidate quarantine and restoration behavior explicit when verification fails"
+  ],
+  "invariants": [
+    {
+      "id": "INV-NO-UNVERIFIED-PASS",
+      "statement": "No promotion gate is marked passing unless its material assertions reproduce from independently administered or trusted execution evidence.",
+      "verification_ref": "AC-RELEASE-EVIDENCE-WITHSTANDS-CHALLENGE"
+    },
+    {
+      "id": "INV-PRESERVE-LAST-VERIFIED-STATE",
+      "statement": "A failed or ambiguous candidate never replaces, rewrites, or weakens the last verified release state.",
+      "verification_ref": "AC-RELEASE-EVIDENCE-RECOVERS-SAFELY"
+    }
+  ],
+  "non_goals": [
+    "Changing runtime code, policy thresholds, branch protection, or release workflow behavior",
+    "Treating this design record, pull-request prose, author assertions, or model output as admission evidence",
+    "Publishing the repository, changing account settings, or creating the final v1.0.0 release"
+  ],
+  "observability": {
+    "signals": [
+      {
+        "decision_use": "Deny publication unless every required gate has an exact independently reproducible evidence reference.",
+        "id": "SIG-RELEASE-GATE-COVERAGE",
+        "name": "Reproducible release gate coverage"
+      },
+      {
+        "decision_use": "Quarantine the candidate immediately when any expected and observed immutable identity or digest differ.",
+        "id": "SIG-RELEASE-IDENTITY-MISMATCH",
+        "name": "Release identity and digest mismatches"
+      }
+    ]
+  },
+  "problem": "The v1.0.0 candidate has extensive verification evidence, but promotion requires a durable, independently reviewable record that binds every release claim to immutable identities and fails closed on mismatch or absence.",
+  "rollback": {
+    "strategy": "Keep the candidate unpublished and quarantined, preserve the last verified release state, and correct inaccurate documentation only through a new governed change that retains the original evidence history.",
+    "triggers": [
+      "Any required gate lacks an independently reproducible source",
+      "Any recorded identity, checksum, attestation, workflow result, or retained artifact fails comparison",
+      "An independent challenger produces an unresolved counterexample"
+    ],
+    "verification_ref": "AC-RELEASE-EVIDENCE-RECOVERS-SAFELY"
+  },
+  "schema_version": 1,
+  "title": "Retain independently reproducible v1.0.0 release evidence",
+  "trust_boundaries": [
+    {
+      "controls": [
+        "Read source and workflow state by immutable identifiers",
+        "Recompute checksums from retained artifact bytes",
+        "Verify attestations against the exact repository, workflow, subject, and signer",
+        "Require independent challenge and deny promotion on missing or conflicting evidence"
+      ],
+      "data": "Source commits, workflow run identities, gate results, artifact bytes, checksums, attestations, reviewer identities, and release status",
+      "id": "TB-CANDIDATE-TO-RELEASE-DECISION",
+      "source": "Candidate-produced release evidence record",
+      "target": "Public v1.0.0 promotion decision"
+    }
+  ]
+}
