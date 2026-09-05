@@ -1,0 +1,20 @@
+# Activation placeholder. Replace every occurrence before enabling the ruleset.
+# scripts/apply-github-ruleset.sh refuses --apply while this example remains.
+* @org/security-team
+
+# Keep this canonical block last: CODEOWNERS uses the last matching pattern.
+# The admission control plane must never be changed without security ownership.
+/.codex-plugin/ @org/security-team
+/.agents/ @org/security-team
+/.github/ @org/security-team
+/.mergegrounds/ @org/security-team
+/.coveragerc @org/security-team
+/.gitattributes @org/security-team
+/mergegrounds-custom @org/security-team
+/requirements-self.in @org/security-team
+/requirements-self.lock @org/security-team
+/templates/bootstrap/ @org/security-team
+/VERSION @org/security-team
+/scripts/ @org/security-team
+/skills/mergegrounds/ @org/security-team
+/SECURITY.md @org/security-team

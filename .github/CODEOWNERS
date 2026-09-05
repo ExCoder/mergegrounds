@@ -1,0 +1,21 @@
+# Source repository owner. The bootstrapper deliberately substitutes an invalid
+# placeholder template for downstream repositories so copied controls remain red
+# until their own accountable owner is selected.
+* @ExCoder
+
+# Keep this canonical block last: CODEOWNERS uses the last matching pattern.
+# The admission control plane must never be changed without security ownership.
+/.codex-plugin/ @ExCoder
+/.agents/ @ExCoder
+/.github/ @ExCoder
+/.mergegrounds/ @ExCoder
+/.coveragerc @ExCoder
+/.gitattributes @ExCoder
+/mergegrounds-custom @ExCoder
+/requirements-self.in @ExCoder
+/requirements-self.lock @ExCoder
+/templates/bootstrap/ @ExCoder
+/VERSION @ExCoder
+/scripts/ @ExCoder
+/skills/mergegrounds/ @ExCoder
+/SECURITY.md @ExCoder

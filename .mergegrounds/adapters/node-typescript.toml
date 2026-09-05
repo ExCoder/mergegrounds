@@ -1,0 +1,49 @@
+schema_version = 1
+id = "node-typescript"
+ecosystem = "node-typescript"
+priority = 100
+
+[detect]
+all_files = ["package.json"]
+any_files = []
+any_globs = []
+
+[toolchain]
+required_commands = ["node", "npm", "npx"]
+required_files = ["package-lock.json"]
+required_any_files = []
+required_any_globs = []
+setup_hint = "This adapter intentionally selects npm: provision with npm ci from package-lock.json in a trusted step. Commit scripts named format:check, lint, typecheck, test:unit, test:coverage, and build; configure the coverage reporter json-summary; add pinned @stryker-mutator/core and matching test-runner plugins; set Stryker thresholds.break to at least 85 and enable the json reporter. Mutation execution is offline/no-install and must find the locked local binary."
+
+[commands]
+format = ["npm run format:check"]
+lint = ["npm run lint -- --max-warnings=0"]
+typecheck = ["npm run typecheck"]
+unit = ["npm run test:unit"]
+coverage = ["npm run test:coverage"]
+mutation = ["npx --offline --no-install stryker run --reporters clear-text,progress,html,json"]
+security = ["mkdir -p reports/security && npm audit --audit-level=moderate --json > reports/security/npm-audit.json"]
+build = ["npm run build"]
+
+[thresholds]
+line_coverage = 90
+branch_coverage = 85
+mutation_score = 85
+
+[metrics.coverage]
+format = "coverage-json"
+paths = ["coverage/coverage-summary.json"]
+required = true
+branch_required = true
+
+[metrics.mutation]
+format = "stryker-json"
+paths = ["reports/mutation/mutation.json"]
+required = true
+
+[artifacts]
+unit = ["junit.xml", "reports/junit*.xml", "test-results/**/*.xml"]
+coverage = ["coverage/coverage-summary.json", "coverage/lcov.info", "coverage/cobertura-coverage.xml"]
+mutation = ["reports/mutation/mutation.json", "reports/mutation/mutation.html"]
+security = ["reports/security/npm-audit*.json"]
+build = ["dist/**", "build/**"]

@@ -1,0 +1,158 @@
+schema_version = 1
+risk_tier = "R3"
+fail_closed = true
+
+[execution]
+timeout_seconds = 1800
+max_output_bytes = 2097152
+fail_fast = false
+sanitize_environment = true
+require_git = true
+require_clean_tree = true
+allowed_environment = [
+  "CI",
+  "GITHUB_ACTIONS",
+  "GITHUB_EVENT_NAME",
+  "GITHUB_EVENT_PATH",
+  "GITHUB_HEAD_REF",
+  "GITHUB_REF",
+  "GITHUB_REF_NAME",
+  "GITHUB_REPOSITORY",
+  "GITHUB_RUN_ATTEMPT",
+  "GITHUB_RUN_ID",
+  "GITHUB_SHA",
+  "RUNNER_ARCH",
+  "RUNNER_OS",
+]
+
+[evidence]
+directory = ".mergegrounds/evidence"
+
+[change_control]
+declaration_glob = ".mergegrounds/changes/*.json"
+design_glob = "docs/decisions/*.json"
+design_required_tiers = ["R0", "R1", "R2", "R3", "R4"]
+require_design_in_base = true
+allow_design_only_lane = true
+claims_satisfy_controls = false
+model_output_satisfies_controls = false
+self_review_satisfies_controls = false
+external_root_of_trust = "required-for-maximum-assurance"
+
+[thresholds]
+line_coverage = 90.0
+branch_coverage = 85.0
+mutation_score = 85.0
+critical_mutation_score = 100.0
+
+[mutation_policy]
+fail_on_survived = true
+fail_on_not_covered = true
+fail_on_timeout = true
+fail_on_invalid = true
+fail_on_unviable = true
+allow_ignored = false
+
+[profiles.fast]
+stages = ["format", "lint", "typecheck", "unit"]
+required_stages = ["format", "lint", "typecheck", "unit"]
+
+[profiles.pr]
+stages = ["policy", "format", "lint", "typecheck", "unit", "coverage", "mutation", "security", "build"]
+required_stages = ["policy", "format", "lint", "typecheck", "unit", "coverage", "mutation", "security", "build"]
+
+[profiles.full]
+stages = ["policy", "format", "lint", "typecheck", "unit", "coverage", "mutation", "security", "build", "fuzz"]
+required_stages = ["policy", "format", "lint", "typecheck", "unit", "coverage", "mutation", "security", "build", "fuzz"]
+
+# Optional author/reviewer UX only. These prompts are never read as evidence and
+# cannot satisfy verify-change, a gate, or an external admission decision.
+[pull_request_guidance]
+authoritative = false
+informational_prompts = [
+  "AI-assisted",
+  "Tests added/updated",
+  "Security impact reviewed",
+  "No secrets",
+  "Evidence attached",
+]
+
+[policy]
+required_files = [
+  ".mergegrounds/ai-assurance.toml",
+  ".mergegrounds/LICENSE.mergegrounds",
+  ".mergegrounds/mergegrounds.toml",
+  ".mergegrounds/changes/README.md",
+  ".mergegrounds/README.mergegrounds.md",
+  ".mergegrounds/exceptions.toml",
+  ".mergegrounds/schemas/ai-assurance.example.toml",
+  ".github/CODEOWNERS",
+  ".github/dependabot.yml",
+  ".github/ISSUE_TEMPLATE/design-review.yml",
+  ".github/pull_request_template.md",
+  ".github/workflows/codeql.yml",
+  ".github/workflows/full-scan.yml",
+  ".github/workflows/mergegrounds.yml",
+  ".github/workflows/scorecard.yml",
+  ".gitignore",
+  ".pre-commit-config.yaml",
+  "scripts/apply-github-ruleset.sh",
+  "scripts/ai_assurance.py",
+  "scripts/mergegrounds.py",
+  "scripts/scaffold_change.py",
+  "docs/decisions/README.md",
+  "SECURITY.md",
+]
+required_codeowners_patterns = [
+  "*",
+  "/.codex-plugin/",
+  "/.agents/",
+  "/.github/",
+  "/.mergegrounds/",
+  "/.coveragerc",
+  "/.gitattributes",
+  "/mergegrounds-custom",
+  "/requirements-self.in",
+  "/requirements-self.lock",
+  "/templates/bootstrap/",
+  "/VERSION",
+  "/scripts/",
+  "/skills/mergegrounds/",
+  "/SECURITY.md",
+]
+critical_paths = [
+  ".codex-plugin/plugin.json",
+  ".agents/plugins/marketplace.json",
+  ".gitattributes",
+  ".gitignore",
+  ".pre-commit-config.yaml",
+  ".coveragerc",
+  ".mergegrounds/ai-assurance.toml",
+  ".mergegrounds/LICENSE.mergegrounds",
+  ".mergegrounds/custom.enabled",
+  ".mergegrounds/mergegrounds.toml",
+  ".mergegrounds/changes/README.md",
+  ".mergegrounds/README.mergegrounds.md",
+  ".mergegrounds/exceptions.toml",
+  ".mergegrounds/adapters/*.toml",
+  ".mergegrounds/profiles/*.toml",
+  ".mergegrounds/schemas/ai-assurance.example.toml",
+  ".github/CODEOWNERS",
+  ".github/dependabot.yml",
+  ".github/ISSUE_TEMPLATE/design-review.yml",
+  ".github/ISSUE_TEMPLATE/feature-request.yml",
+  ".github/ISSUE_TEMPLATE/integration-request.yml",
+  ".github/pull_request_template.md",
+  ".github/workflows/*.yml",
+  ".github/workflows/*.yaml",
+  "mergegrounds-custom",
+  "requirements-self.in",
+  "requirements-self.lock",
+  "templates/bootstrap/**",
+  "VERSION",
+  "scripts/**",
+  "docs/decisions/README.md",
+  "skills/mergegrounds/**/*",
+  "SECURITY.md",
+]
+control_lock = ".mergegrounds/control-plane.lock.json"

@@ -1,0 +1,14 @@
+# AI-product applicability is explicit and fail-closed (schema v2).
+#
+# Keep product_ai=false only when the shipped product itself has no model
+# inference, retrieval, long-context, fine-tuning, or model-driven tools.
+# AI-assisted source code alone does not make the product an AI product.
+# When true, replace this minimal declaration using
+# `.mergegrounds/schemas/ai-assurance.example.toml` and the AI product assurance
+# reference. `python3 -I scripts/ai_assurance.py print-example` can generate the
+# same closed schema for selected capabilities. Every placeholder digest and
+# product-specific case must be replaced.
+schema_version = 2
+product_ai = false
+fail_closed = true
+capabilities = []

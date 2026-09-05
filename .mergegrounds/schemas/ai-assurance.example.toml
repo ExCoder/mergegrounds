@@ -1,0 +1,149 @@
+# Complete schema-v2 example for an inference product. This file is illustrative,
+# not admission policy. Copy its structure into `.mergegrounds/ai-assurance.toml`.
+# Replace every all-zero digest, identity, case, slice, threshold, and policy file.
+# For the mandatory base/production comparison tables used by fine-tuning, run
+# `python3 -I scripts/ai_assurance.py print-example --capability fine_tuning`.
+
+schema_version = 2
+product_ai = true
+fail_closed = true
+capabilities = ["inference"]
+
+[inventory]
+product_id = "replace-product-id"
+repository_id = "replace-owner/repository"
+
+[components.inference]
+provider_id = "replace:inference:provider_id:v1"
+endpoint_id = "replace:inference:endpoint_id:v1"
+model_id = "replace:inference:model_id:v1"
+model_revision = "sha256:0000000000000000000000000000000000000000000000000000000000000000"
+runtime_digest = "sha256:0000000000000000000000000000000000000000000000000000000000000000"
+prompt_digest = "sha256:0000000000000000000000000000000000000000000000000000000000000000"
+inference_parameters_digest = "sha256:0000000000000000000000000000000000000000000000000000000000000000"
+safety_policy_digest = "sha256:0000000000000000000000000000000000000000000000000000000000000000"
+output_validator_digest = "sha256:0000000000000000000000000000000000000000000000000000000000000000"
+
+[protected_policies.evaluation]
+path = ".mergegrounds/policies/ai-evaluation.json"
+sha256 = "sha256:0000000000000000000000000000000000000000000000000000000000000000"
+
+[protected_policies.provider]
+path = ".mergegrounds/policies/ai-provider.json"
+sha256 = "sha256:0000000000000000000000000000000000000000000000000000000000000000"
+
+[protected_policies.sandbox]
+path = ".mergegrounds/policies/ai-sandbox.json"
+sha256 = "sha256:0000000000000000000000000000000000000000000000000000000000000000"
+
+[evaluation]
+report_path = ".mergegrounds/evidence/ai-assurance.json"
+harness_digest = "sha256:0000000000000000000000000000000000000000000000000000000000000000"
+dataset_digest = "sha256:0000000000000000000000000000000000000000000000000000000000000000"
+max_report_age_seconds = 3600
+expected_case_ids = [
+  "replace-inference-expected-001",
+  "replace-inference-refusal-001",
+  "replace-inference-injection-001",
+  "replace-inference-regression-001",
+  "replace-inference-recovery-001",
+]
+critical_slices = ["replace-critical-slice"]
+comparison_policies = [] # required empty array when fine_tuning is not enabled
+
+[[evaluation.authoritative_producers]]
+class = "trusted_execution"
+id = "replace-independent-evaluator-v1"
+
+[[evaluation.cases]]
+id = "replace-inference-expected-001"
+class = "positive"
+requirement = "inference_expected"
+capabilities = ["inference"]
+slices = ["replace-critical-slice"]
+critical = true
+input_digest = "sha256:0000000000000000000000000000000000000000000000000000000000000000"
+expectation_digest = "sha256:0000000000000000000000000000000000000000000000000000000000000000"
+sample_count_mode = "minimum"
+sample_count = 5
+
+[[evaluation.cases]]
+id = "replace-inference-refusal-001"
+class = "negative"
+requirement = "inference_refusal"
+capabilities = ["inference"]
+slices = ["replace-critical-slice"]
+critical = true
+input_digest = "sha256:0000000000000000000000000000000000000000000000000000000000000000"
+expectation_digest = "sha256:0000000000000000000000000000000000000000000000000000000000000000"
+sample_count_mode = "minimum"
+sample_count = 5
+
+[[evaluation.cases]]
+id = "replace-inference-injection-001"
+class = "adversarial"
+requirement = "inference_prompt_injection"
+capabilities = ["inference"]
+slices = ["replace-critical-slice"]
+critical = true
+input_digest = "sha256:0000000000000000000000000000000000000000000000000000000000000000"
+expectation_digest = "sha256:0000000000000000000000000000000000000000000000000000000000000000"
+sample_count_mode = "minimum"
+sample_count = 5
+
+[[evaluation.cases]]
+id = "replace-inference-regression-001"
+class = "regression"
+requirement = "inference_regression"
+capabilities = ["inference"]
+slices = ["replace-critical-slice"]
+critical = true
+input_digest = "sha256:0000000000000000000000000000000000000000000000000000000000000000"
+expectation_digest = "sha256:0000000000000000000000000000000000000000000000000000000000000000"
+sample_count_mode = "minimum"
+sample_count = 5
+
+[[evaluation.cases]]
+id = "replace-inference-recovery-001"
+class = "recovery"
+requirement = "inference_recovery"
+capabilities = ["inference"]
+slices = ["replace-critical-slice"]
+critical = true
+input_digest = "sha256:0000000000000000000000000000000000000000000000000000000000000000"
+expectation_digest = "sha256:0000000000000000000000000000000000000000000000000000000000000000"
+sample_count_mode = "minimum"
+sample_count = 5
+
+# Thresholds are intentionally supplied by the project. The engine has no
+# universal quality number. Every critical slice needs its own threshold so an
+# aggregate cannot hide a local regression.
+[[evaluation.thresholds]]
+metric = "replace-product-pass-rate"
+scope = "aggregate"
+operator = "gte"
+value = 1.0 # conservative example only; approve a product-specific threshold
+case_ids = [
+  "replace-inference-expected-001",
+  "replace-inference-refusal-001",
+  "replace-inference-injection-001",
+  "replace-inference-regression-001",
+  "replace-inference-recovery-001",
+]
+sample_count_mode = "minimum"
+sample_count = 25
+
+[[evaluation.thresholds]]
+metric = "replace-product-pass-rate"
+scope = "replace-critical-slice"
+operator = "gte"
+value = 1.0 # conservative example only; approve a product-specific threshold
+case_ids = [
+  "replace-inference-expected-001",
+  "replace-inference-refusal-001",
+  "replace-inference-injection-001",
+  "replace-inference-regression-001",
+  "replace-inference-recovery-001",
+]
+sample_count_mode = "minimum"
+sample_count = 25

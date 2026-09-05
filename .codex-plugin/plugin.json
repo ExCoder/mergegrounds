@@ -1,0 +1,40 @@
+{
+  "name": "mergegrounds",
+  "version": "1.0.0",
+  "description": "Fail-closed engineering controls that keep unverified AI-assisted code out of protected branches.",
+  "author": {
+    "name": "ExCoder",
+    "email": "3510267+ExCoder@users.noreply.github.com",
+    "url": "https://github.com/ExCoder"
+  },
+  "homepage": "https://mergegrounds.chawax.chatgpt.site",
+  "repository": "https://github.com/ExCoder/mergegrounds",
+  "license": "Apache-2.0",
+  "keywords": [
+    "mergegrounds",
+    "ai-code",
+    "secure-development",
+    "mutation-testing",
+    "design-review",
+    "ai-assurance",
+    "policy-as-code",
+    "supply-chain-security"
+  ],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "MergeGrounds",
+    "shortDescription": "Strict admission controls for AI-assisted code.",
+    "longDescription": "Bootstraps, audits, and repairs a fail-closed repository control plane with design-before-code contracts, observable acceptance oracles, independent challenge, stack-aware quality and mutation testing, supply-chain security, AI-product assurance, and subject-bound evidence gates.",
+    "developerName": "ExCoder",
+    "category": "Developer Tools",
+    "capabilities": [
+      "Write"
+    ],
+    "websiteURL": "https://mergegrounds.chawax.chatgpt.site",
+    "defaultPrompt": [
+      "Harden this repository for AI-assisted development.",
+      "Audit this repository's AI code admission controls.",
+      "Add strict mutation-testing and security gates."
+    ]
+  }
+}

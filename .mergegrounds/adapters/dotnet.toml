@@ -1,0 +1,49 @@
+schema_version = 1
+id = "dotnet"
+ecosystem = "dotnet"
+priority = 100
+
+[detect]
+all_files = []
+any_files = []
+any_globs = ["*.sln", "*.slnx", "**/*.csproj", "**/*.fsproj", "**/*.vbproj"]
+
+[toolchain]
+required_commands = ["dotnet"]
+required_files = ["global.json", ".config/dotnet-tools.json"]
+required_any_files = ["packages.lock.json"]
+required_any_globs = ["**/packages.lock.json"]
+setup_hint = "Pin the SDK exactly with global.json and disable roll-forward, commit packages.lock.json files and .config/dotnet-tools.json, and include dotnet-stryker plus coverlet.msbuild as locked development tools. Run dotnet tool restore in a trusted provisioning step. Configure the Stryker JSON and HTML reporters; pass explicit solution/test-project selection in stryker-config when discovery is ambiguous. coverlet.msbuild requires the VSTest execution model and is not compatible with Microsoft Testing Platform v2; .NET 10 projects using MTP v2 must explicitly select VSTest mode or replace this coverage command and descriptor as one protected policy change."
+
+[commands]
+format = ["dotnet format whitespace --verify-no-changes --no-restore", "dotnet format style --verify-no-changes --no-restore --severity info"]
+lint = ["dotnet format analyzers --verify-no-changes --no-restore --severity info"]
+typecheck = ["dotnet build --no-restore --configuration Release -warnaserror"]
+unit = ["dotnet test --no-restore --configuration Release --logger \"trx;LogFileName=tests.trx\""]
+coverage = ["dotnet test --no-restore --configuration Release /p:CollectCoverage=true /p:CoverletOutputFormat=cobertura /p:CoverletOutput=coverage.cobertura.xml /p:Threshold=\\\"90,85\\\" /p:ThresholdType=\\\"line,branch\\\" /p:ThresholdStat=total"]
+mutation = ["dotnet stryker --break-at 85 --reporter json --reporter html --output StrykerOutput"]
+security = ["dotnet restore --locked-mode -p:NuGetAudit=true -p:NuGetAuditLevel=moderate -p:TreatWarningsAsErrors=true"]
+build = ["dotnet publish --no-restore --configuration Release -p:ContinuousIntegrationBuild=true"]
+
+[thresholds]
+line_coverage = 90
+branch_coverage = 85
+mutation_score = 85
+
+[metrics.coverage]
+format = "cobertura"
+paths = ["coverage.cobertura.xml", "**/coverage.cobertura.xml", "**/TestResults/**/coverage.cobertura.xml"]
+required = true
+branch_required = true
+
+[metrics.mutation]
+format = "stryker-json"
+paths = ["StrykerOutput/**/reports/*mutation*.json"]
+required = true
+
+[artifacts]
+unit = ["**/TestResults/**/*.trx"]
+coverage = ["**/coverage.cobertura.xml", "**/TestResults/**/coverage.cobertura.xml"]
+mutation = ["StrykerOutput/**/reports/*mutation*.json", "StrykerOutput/**/reports/*mutation*.html"]
+security = []
+build = ["**/bin/Release/**/publish/**"]

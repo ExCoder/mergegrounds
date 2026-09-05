@@ -1,0 +1,49 @@
+schema_version = 1
+id = "python"
+ecosystem = "python"
+priority = 90
+
+[detect]
+all_files = []
+any_files = ["pyproject.toml", "setup.cfg", "setup.py"]
+any_globs = []
+
+[toolchain]
+required_commands = ["python3", "ruff", "mypy", "pytest", "coverage", "mutmut", "pip-audit"]
+required_files = []
+required_any_files = ["uv.lock", "pylock.toml", "poetry.lock", "Pipfile.lock", "requirements.lock"]
+required_any_globs = ["requirements*.lock"]
+setup_hint = "Install the locked development environment with the tool matching the committed lock and without resolving new versions in the PR job. A requirements*.lock file qualifies only when all transitive artifacts are exactly pinned with hashes and the installer enforces them. The environment must provide Ruff, mypy, pytest, coverage.py, pip-audit, build, and mutmut 3.5+; configure [tool.mutmut] source_paths and test selection explicitly. mutmut requires fork support, so Windows runners must use WSL or Linux."
+
+[commands]
+format = ["ruff format --check ."]
+lint = ["ruff check . --output-format=concise"]
+typecheck = ["mypy --strict ."]
+unit = ["pytest -q --strict-config --strict-markers --junitxml=junit.xml"]
+coverage = ["coverage erase", "coverage run --branch -m pytest -q --strict-config --strict-markers", "coverage report --show-missing --fail-under=90", "coverage xml -o coverage.xml", "coverage json -o coverage.json"]
+mutation = ["mutmut run", "mutmut export-cicd-stats"]
+security = ["pip-audit --strict --progress-spinner=off --format=json --output=pip-audit.json"]
+build = ["python3 -I -m build"]
+
+[thresholds]
+line_coverage = 90
+branch_coverage = 85
+mutation_score = 85
+
+[metrics.coverage]
+format = "coverage-json"
+paths = ["coverage.json"]
+required = true
+branch_required = true
+
+[metrics.mutation]
+format = "mutmut-json"
+paths = ["mutants/mutmut-cicd-stats.json"]
+required = true
+
+[artifacts]
+unit = ["junit.xml"]
+coverage = ["coverage.xml", "coverage.json", ".coverage"]
+mutation = ["mutants/mutmut-cicd-stats.json", "mutants/**/*.meta"]
+security = ["pip-audit.json"]
+build = ["dist/*.whl", "dist/*.tar.gz"]

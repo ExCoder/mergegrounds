@@ -1,0 +1,5 @@
+schema_version = 1
+id = "pr"
+description = "Fail-closed iterative and pre-PR evidence; insufficient alone for the shipped R3 protected admission workflow."
+stages = ["policy", "format", "lint", "typecheck", "unit", "coverage", "mutation", "security", "build"]
+required_stages = ["policy", "format", "lint", "typecheck", "unit", "coverage", "mutation", "security", "build"]

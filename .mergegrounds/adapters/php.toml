@@ -1,0 +1,49 @@
+schema_version = 1
+id = "php"
+ecosystem = "php"
+priority = 90
+
+[detect]
+all_files = ["composer.json"]
+any_files = []
+any_globs = []
+
+[toolchain]
+required_commands = ["php", "composer"]
+required_files = ["composer.lock"]
+required_any_files = []
+required_any_globs = []
+setup_hint = "Install exactly composer.lock with development tools enabled. Pin PHP-CS-Fixer, PHP_CodeSniffer, PHPStan, PHPUnit, and Infection; provide Xdebug because the required branch/path coverage is unavailable through PCOV or phpdbg. Commit infection.json5 with source scope, summaryJson and HTML logs, timeoutsAsEscaped=true, maxTimeouts=0, minMsi=85, and minCoveredMsi=90."
+
+[commands]
+format = ["vendor/bin/php-cs-fixer fix --dry-run --diff --using-cache=no"]
+lint = ["composer validate --strict --no-check-publish", "vendor/bin/phpcs --report=full"]
+typecheck = ["vendor/bin/phpstan analyse --no-progress"]
+unit = ["vendor/bin/phpunit --colors=never --fail-on-warning --fail-on-risky --log-junit=junit.xml"]
+coverage = ["XDEBUG_MODE=coverage vendor/bin/phpunit --colors=never --fail-on-warning --fail-on-risky --path-coverage --coverage-cobertura=coverage.xml --coverage-text"]
+mutation = ["XDEBUG_MODE=coverage vendor/bin/infection --threads=2 --min-msi=85 --min-covered-msi=90 --with-timeouts --max-timeouts=0 --logger-summary-json=infection-summary.json --logger-html=infection.html"]
+security = ["composer audit --locked --abandoned=fail --format=json"]
+build = ["composer dump-autoload --classmap-authoritative --strict-psr --strict-ambiguous"]
+
+[thresholds]
+line_coverage = 90
+branch_coverage = 85
+mutation_score = 85
+
+[metrics.coverage]
+format = "cobertura"
+paths = ["coverage.xml"]
+required = true
+branch_required = true
+
+[metrics.mutation]
+format = "infection-json"
+paths = ["infection-summary.json"]
+required = true
+
+[artifacts]
+unit = ["junit.xml"]
+coverage = ["coverage.xml"]
+mutation = ["infection-summary.json", "infection.html", "infection-log.json"]
+security = []
+build = ["vendor/composer/autoload_classmap.php"]

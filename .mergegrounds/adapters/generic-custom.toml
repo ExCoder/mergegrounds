@@ -1,0 +1,51 @@
+schema_version = 1
+id = "generic-custom"
+ecosystem = "custom"
+priority = 1
+
+[detect]
+all_files = [".mergegrounds/custom.enabled", "mergegrounds-custom"]
+any_files = []
+any_globs = []
+
+[toolchain]
+required_commands = []
+required_files = ["mergegrounds-custom", ".mergegrounds/custom.enabled"]
+required_any_files = []
+required_any_globs = []
+setup_hint = "Create a reviewed executable named mergegrounds-custom at the repository root and an empty .mergegrounds/custom.enabled marker. The executable must implement format, lint, typecheck, unit, coverage, mutation, security, build, and fuzz subcommands. Unit must write at least one current-run, positive JUnit XML or official-namespace TRX result below .mergegrounds/reports/unit; opaque logs are supplemental and cannot prove test execution. Both coverage and mutation must atomically recreate the complete .mergegrounds/reports/metrics.json object with current-run line_coverage, branch_coverage, and mutation_score numbers; the runner removes a prior untrusted report before each metric stage. Return non-zero for every policy failure."
+
+[commands]
+format = ["./mergegrounds-custom format"]
+lint = ["./mergegrounds-custom lint"]
+typecheck = ["./mergegrounds-custom typecheck"]
+unit = ["./mergegrounds-custom unit"]
+coverage = ["./mergegrounds-custom coverage"]
+mutation = ["./mergegrounds-custom mutation"]
+security = ["./mergegrounds-custom security"]
+build = ["./mergegrounds-custom build"]
+fuzz = ["./mergegrounds-custom fuzz"]
+
+[thresholds]
+line_coverage = 90
+branch_coverage = 85
+mutation_score = 85
+
+[metrics.coverage]
+format = "mergegrounds-json"
+paths = [".mergegrounds/reports/metrics.json"]
+required = true
+branch_required = true
+
+[metrics.mutation]
+format = "mergegrounds-json"
+paths = [".mergegrounds/reports/metrics.json"]
+required = true
+
+[artifacts]
+unit = [".mergegrounds/reports/unit/**/*"]
+coverage = [".mergegrounds/reports/metrics.json", ".mergegrounds/reports/coverage/**/*"]
+mutation = [".mergegrounds/reports/metrics.json", ".mergegrounds/reports/mutation/**/*"]
+security = [".mergegrounds/reports/security/**/*"]
+build = [".mergegrounds/reports/build/**/*"]
+fuzz = [".mergegrounds/reports/fuzz/**/*"]

@@ -1,0 +1,6 @@
+interface:
+  display_name: "MergeGrounds"
+  short_description: "Strict design and evidence gates for AI code"
+  default_prompt: "Use $mergegrounds to harden this repository with design-before-code, independent challenge, mutation testing, and fail-closed evidence gates."
+policy:
+  allow_implicit_invocation: true

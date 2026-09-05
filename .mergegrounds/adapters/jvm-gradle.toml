@@ -1,0 +1,49 @@
+schema_version = 1
+id = "jvm-gradle"
+ecosystem = "jvm-gradle"
+priority = 100
+
+[detect]
+all_files = []
+any_files = ["build.gradle", "build.gradle.kts"]
+any_globs = []
+
+[toolchain]
+required_commands = ["java"]
+required_files = ["gradlew", "gradle/wrapper/gradle-wrapper.properties"]
+required_any_files = ["gradle.lockfile"]
+required_any_globs = ["**/gradle.lockfile", "**/gradle/dependency-locks/*.lockfile"]
+setup_hint = "Commit and use the Gradle Wrapper, verify its distribution checksum, enable dependency locking for every resolvable configuration with LockMode.STRICT, and commit every generated lockfile. Pin Spotless, Checkstyle, JaCoCo, OWASP Dependency-Check, info.solidsoft.pitest, PIT, and its test-framework plugin. Configure PIT mutationThreshold=85, coverageThreshold=90, XML+HTML output, timestampedReports=false, and failWhenNoMutations=true."
+
+[commands]
+format = ["./gradlew --no-daemon spotlessCheck"]
+lint = ["./gradlew --no-daemon checkstyleMain checkstyleTest"]
+typecheck = ["./gradlew --no-daemon classes testClasses"]
+unit = ["./gradlew --no-daemon test"]
+coverage = ["./gradlew --no-daemon jacocoTestReport jacocoTestCoverageVerification"]
+mutation = ["./gradlew --no-daemon pitest"]
+security = ["./gradlew --no-daemon dependencyCheckAnalyze"]
+build = ["./gradlew --no-daemon assemble"]
+
+[thresholds]
+line_coverage = 90
+branch_coverage = 85
+mutation_score = 85
+
+[metrics.coverage]
+format = "jacoco"
+paths = ["build/reports/jacoco/**/jacoco*.xml", "**/build/reports/jacoco/**/jacoco*.xml"]
+required = true
+branch_required = true
+
+[metrics.mutation]
+format = "pit-xml"
+paths = ["build/reports/pitest/**/mutations.xml", "**/build/reports/pitest/**/mutations.xml"]
+required = true
+
+[artifacts]
+unit = ["build/test-results/test/*.xml", "**/build/test-results/test/*.xml"]
+coverage = ["build/reports/jacoco/**/jacoco*.xml", "**/build/reports/jacoco/**/jacoco*.xml"]
+mutation = ["build/reports/pitest/**/mutations.xml", "build/reports/pitest/**/index.html", "**/build/reports/pitest/**/mutations.xml"]
+security = ["build/reports/dependency-check-report.json", "build/reports/dependency-check-report.html"]
+build = ["build/libs/*.jar", "**/build/libs/*.jar"]

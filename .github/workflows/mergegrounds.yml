@@ -1,0 +1,500 @@
+name: MergeGrounds
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, edited, ready_for_review]
+  push:
+  merge_group:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mergegrounds-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  policy:
+    name: MergeGrounds / Policy
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout candidate without persisted credentials
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+          show-progress: false
+      - name: Install pinned Python runtime
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.13.15"
+          check-latest: false
+      - name: Run the MergeGrounds source unit suite
+        if: ${{ hashFiles('requirements-self.lock') != '' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -I -m unittest discover -s tests -v
+      - name: Verify repository policy and control-plane integrity
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -I scripts/mergegrounds.py verify-repo --strict
+          python3 -I scripts/ai_assurance.py validate-policy
+      - name: Verify structured change and pre-existing design contracts
+        if: github.event_name == 'pull_request'
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -I scripts/mergegrounds.py verify-change --event "$GITHUB_EVENT_PATH"
+
+  pr:
+    name: MergeGrounds / PR
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout complete candidate history without persisted credentials
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+          show-progress: false
+      - name: Install pinned Python runtime
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.13.15"
+          check-latest: false
+      - name: Install hash-locked source verification tools
+        if: ${{ hashFiles('requirements-self.lock') != '' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m pip install --disable-pip-version-check --require-hashes -r requirements-self.lock
+      - name: Scan introduced history for verified and unknown secrets
+        if: github.event_name == 'pull_request'
+        shell: bash
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          MERGE_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          [[ "$BASE_SHA" =~ ^[0-9a-f]{40,64}$ ]]
+          [[ "$HEAD_SHA" =~ ^[0-9a-f]{40,64}$ ]]
+          [[ "$MERGE_SHA" =~ ^[0-9a-f]{40,64}$ ]]
+          git merge-base --is-ancestor "$BASE_SHA" "$MERGE_SHA"
+          git merge-base --is-ancestor "$HEAD_SHA" "$MERGE_SHA"
+          docker run --rm \
+            --volume "${GITHUB_WORKSPACE}:/repo:ro" \
+            trufflesecurity/trufflehog@sha256:562bc231afa9de3d04de44cfe624252b08207de1fc3cebc5e7ed92bed7f279e4 \
+            git file:///repo \
+            --since-commit "$BASE_SHA" \
+            --branch "$MERGE_SHA" \
+            --results=verified,unknown \
+            --fail \
+            --fail-on-scan-errors \
+            --no-update \
+            --github-actions
+      - name: Reject vulnerable dependency changes
+        if: github.event_name == 'pull_request'
+        uses: actions/dependency-review-action@a1d282b36b6f3519aa1f3fc636f609c47dddb294 # v5.0.0
+        with:
+          fail-on-severity: low
+          fail-on-scopes: runtime, development, unknown
+          vulnerability-check: true
+          license-check: true
+          warn-only: false
+          retry-on-snapshot-warnings: true
+          retry-on-snapshot-warnings-timeout: 120
+          show-openssf-scorecard: true
+          warn-on-openssf-scorecard-level: 5
+      - name: Run fail-closed full admission profile
+        id: mergegrounds_pr
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -L .mergegrounds || -L .mergegrounds/evidence || -L .mergegrounds/evidence/.gitkeep ]]; then
+            echo "MergeGrounds evidence path and tracked marker must not be symbolic links" >&2
+            exit 1
+          fi
+          if [[ ! -d .mergegrounds/evidence || ! -f .mergegrounds/evidence/.gitkeep ]]; then
+            echo "MergeGrounds evidence directory must contain the tracked .gitkeep marker" >&2
+            exit 1
+          fi
+          chmod 0700 .mergegrounds/evidence
+          find .mergegrounds/evidence -depth -mindepth 1 ! -path '.mergegrounds/evidence/.gitkeep' -delete
+          set +e
+          python3 -I scripts/mergegrounds.py run --profile full --evidence .mergegrounds/evidence/pr.json
+          mergegrounds_exit=$?
+          set -e
+          printf 'exit_code=%s\n' "$mergegrounds_exit" >>"$GITHUB_OUTPUT"
+          exit "$mergegrounds_exit"
+      - name: Validate conditional AI-product evidence
+        id: ai_assurance
+        if: ${{ always() }}
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -I scripts/ai_assurance.py evaluate \
+            --output .mergegrounds/evidence/ai-decision.json
+      - name: Validate AI-product decision as inert subject-bound data
+        id: ai_evidence
+        if: ${{ always() }}
+        shell: bash
+        env:
+          EXPECTED_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          python3 -I - .mergegrounds/evidence/ai-decision.json <<'PY'
+          import hashlib
+          import json
+          import os
+          import re
+          import stat
+          import subprocess
+          import sys
+          import tomllib
+
+          root = os.path.realpath(os.getcwd())
+          expected_sha = os.environ.get("EXPECTED_SHA", "")
+          if not re.fullmatch(r"[0-9a-f]{40,64}", expected_sha):
+              raise SystemExit("expected AI decision subject is not a commit identifier")
+          git_environment = {
+              key: value
+              for key, value in os.environ.items()
+              if not key.upper().startswith("GIT_")
+          }
+          git_environment.update(
+              {
+                  "GIT_CONFIG_NOSYSTEM": "1",
+                  "GIT_CONFIG_SYSTEM": os.devnull,
+                  "GIT_CONFIG_GLOBAL": os.devnull,
+                  "GIT_CONFIG_COUNT": "0",
+                  "GIT_NO_REPLACE_OBJECTS": "1",
+                  "GIT_OPTIONAL_LOCKS": "0",
+                  "GIT_TERMINAL_PROMPT": "0",
+              }
+          )
+
+          def git_stdout(*arguments, text=True):
+              return subprocess.run(
+                  [
+                      "git",
+                      "-c", "core.fsmonitor=false",
+                      "-c", "core.untrackedCache=false",
+                      "-c", f"core.hooksPath={os.devnull}",
+                      *arguments,
+                  ],
+                  cwd=root,
+                  env=git_environment,
+                  check=True,
+                  text=text,
+                  stdout=subprocess.PIPE,
+                  stderr=subprocess.PIPE,
+                  timeout=30,
+              ).stdout
+
+          top = git_stdout("rev-parse", "--show-toplevel").strip()
+          head = git_stdout("rev-parse", "HEAD").strip()
+          tree = git_stdout("rev-parse", f"{expected_sha}^{{tree}}").strip()
+          if os.path.realpath(top) != root or head != expected_sha:
+              raise SystemExit("AI decision is not being checked at the exact Git root and HEAD")
+
+          def read_regular(relative, maximum):
+              parts = relative.split("/")
+              if not parts or any(part in {"", ".", ".."} for part in parts):
+                  raise SystemExit(f"unsafe AI evidence path: {relative!r}")
+              directory = os.open(
+                  root,
+                  os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW,
+              )
+              try:
+                  for part in parts[:-1]:
+                      child = os.open(
+                          part,
+                          os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW,
+                          dir_fd=directory,
+                      )
+                      os.close(directory)
+                      directory = child
+                  descriptor = os.open(
+                      parts[-1], os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK,
+                      dir_fd=directory,
+                  )
+              finally:
+                  os.close(directory)
+              with os.fdopen(descriptor, "rb") as handle:
+                  metadata = os.fstat(handle.fileno())
+                  if (
+                      not stat.S_ISREG(metadata.st_mode)
+                      or metadata.st_mode & 0o111
+                      or metadata.st_size <= 0
+                      or metadata.st_size > maximum
+                  ):
+                      raise SystemExit("AI evidence must be bounded, regular, and non-executable")
+                  return handle.read(maximum + 1)
+
+          def reject_constant(value):
+              raise ValueError(f"non-finite JSON constant: {value}")
+
+          def unique_object(pairs):
+              result = {}
+              for key, value in pairs:
+                  if key in result:
+                      raise ValueError(f"duplicate JSON key: {key}")
+                  result[key] = value
+              return result
+
+          decision_bytes = read_regular(sys.argv[1], 1024 * 1024)
+          try:
+              decision = json.loads(
+                  decision_bytes.decode("utf-8"),
+                  parse_constant=reject_constant,
+                  object_pairs_hook=unique_object,
+              )
+          except (UnicodeDecodeError, json.JSONDecodeError, ValueError) as error:
+              raise SystemExit(f"AI decision is invalid JSON: {error}") from error
+          expected_keys = {
+              "schema_version", "decision", "local_conformance", "authority",
+              "product_ai", "capabilities", "report_path", "source_commit",
+              "source_tree", "config_digest", "report_digest",
+              "expected_case_set_digest", "findings", "limitations",
+          }
+          if not isinstance(decision, dict) or set(decision) != expected_keys:
+              raise SystemExit("AI decision has an unsupported closed schema")
+          if (
+              decision["schema_version"] != 2
+              or decision["decision"] != "allow"
+              or decision["local_conformance"] is not True
+              or decision["authority"] != "local-validation-only"
+              or decision["source_commit"] != expected_sha
+              or decision["source_tree"] != tree
+          ):
+              raise SystemExit("AI decision is non-allow or subject-mismatched")
+
+          config_spec = f"{expected_sha}:.mergegrounds/ai-assurance.toml"
+          mode_line = git_stdout(
+              "ls-tree", expected_sha, "--", ".mergegrounds/ai-assurance.toml"
+          ).strip()
+          if not re.fullmatch(
+              r"100644 blob [0-9a-f]{40,64}\t\.mergegrounds/ai-assurance\.toml", mode_line
+          ):
+              raise SystemExit("AI policy is not one non-executable regular Git blob")
+          config_bytes = git_stdout("cat-file", "blob", config_spec, text=False)
+          if not 0 < len(config_bytes) <= 1024 * 1024:
+              raise SystemExit("AI policy blob is empty or oversized")
+          config_digest = "sha256:" + hashlib.sha256(config_bytes).hexdigest()
+          if decision["config_digest"] != config_digest:
+              raise SystemExit("AI decision config digest does not match the subject blob")
+          try:
+              policy = tomllib.loads(config_bytes.decode("utf-8"))
+          except (UnicodeDecodeError, tomllib.TOMLDecodeError) as error:
+              raise SystemExit(f"AI policy blob is invalid: {error}") from error
+          if (
+              type(policy.get("product_ai")) is not bool
+              or policy.get("fail_closed") is not True
+              or decision["product_ai"] is not policy["product_ai"]
+              or decision["capabilities"] != policy.get("capabilities")
+          ):
+              raise SystemExit("AI decision applicability disagrees with subject policy")
+          if not isinstance(decision["findings"], list) or not decision["findings"]:
+              raise SystemExit("AI decision lacks typed findings")
+          if not isinstance(decision["limitations"], list) or not decision["limitations"]:
+              raise SystemExit("AI decision hides local-validation limitations")
+          codes = {item.get("code") for item in decision["findings"] if isinstance(item, dict)}
+          digest_pattern = re.compile(r"sha256:[0-9a-f]{64}")
+          if policy["product_ai"]:
+              report_path = policy.get("evaluation", {}).get("report_path")
+              if (
+                  not isinstance(report_path, str)
+                  or not report_path.startswith(".mergegrounds/evidence/")
+                  or decision["report_path"] != report_path
+                  or not isinstance(decision["report_digest"], str)
+                  or not digest_pattern.fullmatch(decision["report_digest"])
+                  or not isinstance(decision["expected_case_set_digest"], str)
+                  or not digest_pattern.fullmatch(decision["expected_case_set_digest"])
+                  or "AI_REPORT_CONFORMANT" not in codes
+              ):
+                  raise SystemExit("AI-enabled decision lacks complete report/case binding")
+              report_bytes = read_regular(report_path, 8 * 1024 * 1024)
+              actual_report = "sha256:" + hashlib.sha256(report_bytes).hexdigest()
+              if decision["report_digest"] != actual_report:
+                  raise SystemExit("AI decision report digest does not match retained report")
+          elif (
+              decision["capabilities"] != []
+              or decision["report_path"] is not None
+              or decision["report_digest"] is not None
+              or decision["expected_case_set_digest"] is not None
+              or "AI_NOT_APPLICABLE" not in codes
+          ):
+              raise SystemExit("non-AI decision materialized contradictory AI evidence")
+          PY
+      - name: Validate MergeGrounds evidence as inert data
+        id: mergegrounds_evidence
+        if: ${{ always() }}
+        shell: bash
+        env:
+          MERGEGROUNDS_EXIT_CODE: ${{ steps.mergegrounds_pr.outputs.exit_code }}
+        run: |
+          set -euo pipefail
+          python3 -I - .mergegrounds/evidence/pr.json <<'PY'
+          import json
+          import os
+          import re
+          import stat
+          import sys
+
+          path = sys.argv[1]
+          raw_exit = os.environ.get("MERGEGROUNDS_EXIT_CODE", "")
+          if not re.fullmatch(r"[0-9]+", raw_exit):
+              raise SystemExit("MergeGrounds runner did not publish a numeric exit code")
+          exit_code = int(raw_exit)
+          if not 0 <= exit_code <= 255:
+              raise SystemExit("MergeGrounds runner exit code is outside the shell range")
+
+          def reject_constant(value):
+              raise ValueError(f"non-finite JSON constant: {value}")
+
+          def unique_object(pairs):
+              result = {}
+              for key, value in pairs:
+                  if key in result:
+                      raise ValueError(f"duplicate JSON key: {key}")
+                  result[key] = value
+              return result
+
+          descriptor = os.open(
+              path,
+              os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0) | getattr(os, "O_NONBLOCK", 0),
+          )
+          metadata = os.fstat(descriptor)
+          if (
+              not stat.S_ISREG(metadata.st_mode)
+              or metadata.st_size == 0
+              or metadata.st_size > 64 * 1024 * 1024
+          ):
+              raise SystemExit("MergeGrounds evidence must be a regular file between 1 byte and 64 MiB")
+          with os.fdopen(descriptor, encoding="utf-8") as handle:
+              try:
+                  document = json.load(
+                      handle,
+                      parse_constant=reject_constant,
+                      object_pairs_hook=unique_object,
+                  )
+              except (UnicodeDecodeError, json.JSONDecodeError, ValueError) as error:
+                  raise SystemExit(f"MergeGrounds evidence is invalid JSON: {error}") from error
+
+          if not isinstance(document, dict) or document.get("schema_version") != 1:
+              raise SystemExit("MergeGrounds evidence has an unsupported schema")
+          if document.get("profile") != "full":
+              raise SystemExit("protected pull requests require the complete full profile")
+          observed = (document.get("status"), document.get("decision"))
+          expected = ("pass", "allow") if exit_code == 0 else ("fail", "deny")
+          if observed != expected:
+              raise SystemExit(
+                  f"MergeGrounds evidence verdict {observed!r} disagrees with exit code {exit_code}"
+              )
+          PY
+      - name: Normalize MergeGrounds attempt into a fail-closed receipt
+        id: mergegrounds_receipt
+        if: ${{ always() }}
+        continue-on-error: true
+        shell: bash
+        env:
+          MERGEGROUNDS_EXIT_CODE: ${{ steps.mergegrounds_pr.outputs.exit_code }}
+          RUNNER_OUTCOME: ${{ steps.mergegrounds_pr.outcome }}
+        run: |
+          set -euo pipefail
+          python3 -I scripts/mergegrounds.py normalize-attempt \
+            --raw .mergegrounds/evidence/pr.json \
+            --output .mergegrounds/evidence/pr-receipt.json \
+            --profile full \
+            --subject-sha "$GITHUB_SHA" \
+            --exit-code "$MERGEGROUNDS_EXIT_CODE" \
+            --runner-outcome "$RUNNER_OUTCOME"
+      - name: Retain MergeGrounds evidence
+        if: ${{ always() && steps.mergegrounds_evidence.outcome == 'success' }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: mergegrounds-pr-${{ github.run_id }}-${{ github.run_attempt }}
+          path: .mergegrounds/evidence/pr.json
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 30
+          compression-level: 9
+      - name: Retain fail-closed MergeGrounds attempt receipt
+        if: ${{ always() }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: mergegrounds-pr-receipt-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: .mergegrounds/evidence/pr-receipt.json
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 9
+      - name: Retain conditional AI-product decision
+        if: ${{ always() }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: mergegrounds-ai-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: .mergegrounds/evidence/ai-decision.json
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 9
+      - name: Enforce MergeGrounds PR verdict
+        if: ${{ always() }}
+        shell: bash
+        env:
+          EVIDENCE_OUTCOME: ${{ steps.mergegrounds_evidence.outcome }}
+          RECEIPT_OUTCOME: ${{ steps.mergegrounds_receipt.outcome }}
+          AI_ASSURANCE_OUTCOME: ${{ steps.ai_assurance.outcome }}
+          AI_EVIDENCE_OUTCOME: ${{ steps.ai_evidence.outcome }}
+          MERGEGROUNDS_EXIT_CODE: ${{ steps.mergegrounds_pr.outputs.exit_code }}
+          RUNNER_OUTCOME: ${{ steps.mergegrounds_pr.outcome }}
+        run: |
+          set -euo pipefail
+          if [[ "$EVIDENCE_OUTCOME" != success ]]; then
+            echo "MergeGrounds evidence was missing, malformed, or inconsistent" >&2
+            exit 1
+          fi
+          if [[ ! "$MERGEGROUNDS_EXIT_CODE" =~ ^[0-9]+$ ]] || (( MERGEGROUNDS_EXIT_CODE > 255 )); then
+            echo "MergeGrounds runner exit code is invalid" >&2
+            exit 1
+          fi
+          if (( MERGEGROUNDS_EXIT_CODE == 0 )); then
+            if [[ "$AI_ASSURANCE_OUTCOME" != success ]]; then
+              echo "Conditional AI-product assurance did not produce an allow decision" >&2
+              exit 1
+            fi
+            if [[ "$AI_EVIDENCE_OUTCOME" != success ]]; then
+              echo "Conditional AI-product decision was malformed or subject-mismatched" >&2
+              exit 1
+            fi
+            if [[ "$RECEIPT_OUTCOME" != success ]]; then
+              echo "MergeGrounds allow receipt was not successfully normalized" >&2
+              exit 1
+            fi
+            if [[ "$RUNNER_OUTCOME" != success ]]; then
+              echo "MergeGrounds runner outcome disagrees with its zero exit code" >&2
+              exit 1
+            fi
+            exit 0
+          fi
+          if [[ "$RECEIPT_OUTCOME" != failure ]]; then
+            echo "MergeGrounds deny receipt did not preserve the runner denial" >&2
+            exit 1
+          fi
+          if [[ "$RUNNER_OUTCOME" != failure ]]; then
+            echo "MergeGrounds runner outcome disagrees with its nonzero exit code" >&2
+            exit 1
+          fi
+          echo "MergeGrounds denied this revision with exit code $MERGEGROUNDS_EXIT_CODE" >&2
+          exit "$MERGEGROUNDS_EXIT_CODE"

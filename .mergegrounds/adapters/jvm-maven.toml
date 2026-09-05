@@ -1,0 +1,49 @@
+schema_version = 1
+id = "jvm-maven"
+ecosystem = "jvm-maven"
+priority = 100
+
+[detect]
+all_files = ["pom.xml"]
+any_files = []
+any_globs = []
+
+[toolchain]
+required_commands = ["java"]
+required_files = ["pom.xml", "mvnw", ".mvn/wrapper/maven-wrapper.properties"]
+required_any_files = []
+required_any_globs = []
+setup_hint = "Use the committed Maven Wrapper and pin its distribution URL/checksum. Pin Spotless, Checkstyle, JaCoCo, OWASP Dependency-Check, PIT, every build plugin, and the PIT test-framework plugin in pom.xml or a trusted immutable parent POM. Configure PIT mutationThreshold=85, coverageThreshold=90, XML+HTML output, timestampedReports=false, and failWhenNoMutations=true."
+
+[commands]
+format = ["./mvnw -B -ntp spotless:check"]
+lint = ["./mvnw -B -ntp checkstyle:check"]
+typecheck = ["./mvnw -B -ntp -DskipTests compile"]
+unit = ["./mvnw -B -ntp test"]
+coverage = ["./mvnw -B -ntp verify"]
+mutation = ["./mvnw -B -ntp test-compile org.pitest:pitest-maven:mutationCoverage -DmutationThreshold=85 -DcoverageThreshold=90 -DoutputFormats=XML,HTML -DtimestampedReports=false -DfailWhenNoMutations=true"]
+security = ["./mvnw -B -ntp org.owasp:dependency-check-maven:check"]
+build = ["./mvnw -B -ntp -DskipTests package"]
+
+[thresholds]
+line_coverage = 90
+branch_coverage = 85
+mutation_score = 85
+
+[metrics.coverage]
+format = "jacoco"
+paths = ["target/site/jacoco/jacoco.xml", "**/target/site/jacoco/jacoco.xml"]
+required = true
+branch_required = true
+
+[metrics.mutation]
+format = "pit-xml"
+paths = ["target/pit-reports/**/mutations.xml", "**/target/pit-reports/**/mutations.xml"]
+required = true
+
+[artifacts]
+unit = ["target/surefire-reports/*.xml", "target/failsafe-reports/*.xml"]
+coverage = ["target/site/jacoco/jacoco.xml", "target/site/jacoco-it/jacoco.xml"]
+mutation = ["target/pit-reports/**/mutations.xml", "target/pit-reports/**/index.html"]
+security = ["target/dependency-check-report.json", "target/dependency-check-report.html"]
+build = ["target/*.jar", "target/*.war"]

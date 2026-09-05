@@ -1,0 +1,5 @@
+schema_version = 1
+id = "full"
+description = "Protected R3 candidate, scheduled, and pre-release full-tree verification; requires a repository-defined candidate-bound fuzz harness."
+stages = ["policy", "format", "lint", "typecheck", "unit", "coverage", "mutation", "security", "build", "fuzz"]
+required_stages = ["policy", "format", "lint", "typecheck", "unit", "coverage", "mutation", "security", "build", "fuzz"]

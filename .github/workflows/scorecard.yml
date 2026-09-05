@@ -1,0 +1,131 @@
+name: OpenSSF Scorecard
+
+on:
+  schedule:
+    - cron: "17 4 * * 3"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: scorecard-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  analysis:
+    name: Scorecard
+    if: ${{ github.event.repository.private == false }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    permissions:
+      checks: read
+      contents: read
+      issues: read
+      pull-requests: read
+    steps:
+      - name: Harden runner and audit egress
+        uses: step-security/harden-runner@e14015d583714f6e62063499dc959a02595150a1 # v2.21.1
+        with:
+          egress-policy: audit
+      - name: Checkout without persisted credentials
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+          show-progress: false
+      - name: Download and verify the pinned Scorecard CLI
+        shell: bash
+        env:
+          SCORECARD_ARCHIVE_SHA256: 83b90a05c1540ef1390db1cd5711e5fd04be9c1d8537fb84d39d02092d6a8dff
+        run: |
+          set -euo pipefail
+          tool_dir="${RUNNER_TEMP}/scorecard-5.5.0"
+          archive="${RUNNER_TEMP}/scorecard_5.5.0_linux_amd64.tar.gz"
+          install -d -m 0700 "$tool_dir"
+          curl --proto '=https' --tlsv1.2 --fail --show-error --silent --location \
+            --retry 3 --retry-all-errors \
+            --output "$archive" \
+            https://github.com/ossf/scorecard/releases/download/v5.5.0/scorecard_5.5.0_linux_amd64.tar.gz
+          printf '%s  %s\n' "$SCORECARD_ARCHIVE_SHA256" "$archive" | sha256sum --check --strict
+          tar --extract --gzip --file "$archive" --directory "$tool_dir" scorecard
+          test -x "$tool_dir/scorecard"
+      - name: Analyze supply-chain posture
+        shell: bash
+        env:
+          ENABLE_SARIF: "1"
+          GITHUB_AUTH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          "${RUNNER_TEMP}/scorecard-5.5.0/scorecard" \
+            --repo "github.com/${GITHUB_REPOSITORY}" \
+            --commit "$GITHUB_SHA" \
+            --format sarif \
+            --output scorecard-results.sarif
+          test -s scorecard-results.sarif
+      - name: Retain Scorecard SARIF
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: scorecard-results-${{ github.run_id }}-${{ github.run_attempt }}
+          path: scorecard-results.sarif
+          if-no-files-found: error
+          retention-days: 5
+
+  upload:
+    name: Scorecard / Upload SARIF
+    needs: analysis
+    if: ${{ github.event.repository.private == false }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
+    steps:
+      - name: Download the immutable Scorecard artifact
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: scorecard-results-${{ github.run_id }}-${{ github.run_attempt }}
+          path: scorecard-artifact
+      - name: Validate Scorecard SARIF as inert data
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -I - scorecard-artifact scorecard-results.sarif <<'PY'
+          import json
+          import os
+          import stat
+          import sys
+
+          directory_path, filename = sys.argv[1:]
+          directory = os.open(
+              directory_path,
+              os.O_RDONLY | getattr(os, "O_DIRECTORY", 0) | getattr(os, "O_NOFOLLOW", 0),
+          )
+          try:
+              if os.listdir(directory) != [filename]:
+                  raise SystemExit("Scorecard artifact must contain exactly one expected SARIF file")
+              descriptor = os.open(
+                  filename,
+                  os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0) | getattr(os, "O_NONBLOCK", 0),
+                  dir_fd=directory,
+              )
+          finally:
+              os.close(directory)
+
+          with os.fdopen(descriptor, encoding="utf-8") as handle:
+              metadata = os.fstat(handle.fileno())
+              if (
+                  not stat.S_ISREG(metadata.st_mode)
+                  or metadata.st_size == 0
+                  or metadata.st_size > 10 * 1024 * 1024
+              ):
+                  raise SystemExit("Scorecard SARIF must be a regular file between 1 byte and 10 MiB")
+              document = json.load(handle)
+
+          if document.get("version") != "2.1.0" or not isinstance(document.get("runs"), list):
+              raise SystemExit("Scorecard output is not a SARIF 2.1.0 document")
+          PY
+      - name: Upload Scorecard SARIF to code scanning
+        uses: github/codeql-action/upload-sarif@cdf488f595d80d6e07e03d4674febd5ab45fa938 # v4.37.9
+        with:
+          sarif_file: scorecard-artifact/scorecard-results.sarif

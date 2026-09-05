@@ -1,0 +1,58 @@
+name: Design review
+description: Review architecture and observable outcomes before implementation starts
+title: "[design] "
+labels: ["design-review"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        This issue coordinates review; it is not admission evidence. After agreement,
+        add the strict JSON record through a design-only PR. Do not paste prompts,
+        chain-of-thought, secrets, customer data, or proprietary model context.
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem and desired outcome
+      description: State the externally observable problem, baseline, and desired result.
+    validations:
+      required: true
+  - type: textarea
+    id: boundaries
+    attributes:
+      label: Trust boundaries and data flows
+      description: Identify actors, privileges, data classifications, crossings, and controls.
+    validations:
+      required: true
+  - type: textarea
+    id: decisions
+    attributes:
+      label: Decisions, alternatives, and invariants
+      description: Record alternatives and invariants. Rationale is context, not evidence.
+    validations:
+      required: true
+  - type: textarea
+    id: failure
+    attributes:
+      label: Failure modes and recovery
+      description: Include detection, safe failure behavior, rollback triggers, and recovery proof.
+    validations:
+      required: true
+  - type: textarea
+    id: evaluation
+    attributes:
+      label: Evaluation and independent challenge
+      description: Define positive, negative, adversarial, and recovery oracles plus outcome metrics.
+    validations:
+      required: true
+  - type: textarea
+    id: provenance
+    attributes:
+      label: AI provenance
+      description: Name tools/models and affected decisions or paths; omit reasoning traces and prompts.
+    validations:
+      required: true
+  - type: markdown
+    attributes:
+      value: |
+        Approval must be bound to the final design digest by the protected review process.
+        A model self-review or checked box cannot replace an independent human or external verifier.

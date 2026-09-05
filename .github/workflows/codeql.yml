@@ -1,0 +1,676 @@
+name: CodeQL
+
+on:
+  pull_request:
+  push:
+  merge_group:
+  schedule:
+    - cron: "23 3 * * 2"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: codeql-${{ github.event.pull_request.number || github.ref }}
+  # Preserve earlier deny results instead of letting a newer candidate revision
+  # cancel the run that produced them.
+  cancel-in-progress: false
+
+jobs:
+  detect:
+    name: CodeQL / Detect languages
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    outputs:
+      matrix: ${{ steps.languages.outputs.matrix }}
+    steps:
+      - name: Checkout candidate without persisted credentials
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 1
+          show-progress: false
+      - name: Install pinned Python runtime
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.13.15"
+          check-latest: false
+      - name: Build a deterministic supported-language matrix
+        id: languages
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -I - <<'PY' >>"$GITHUB_OUTPUT"
+          import json
+          import os
+          from pathlib import PurePosixPath
+          import subprocess
+
+          tracked = subprocess.check_output(["git", "ls-files", "-z"]).split(b"\0")
+          suffixes = {
+              PurePosixPath(os.fsdecode(path)).suffix.lower()
+              for path in tracked
+              if path
+          }
+
+          definitions = (
+              ("c-cpp", {".c", ".cc", ".cpp", ".cxx", ".c++", ".h", ".hh", ".hpp", ".hxx"}, "none", "ubuntu-24.04"),
+              ("csharp", {".cs"}, "none", "ubuntu-24.04"),
+              ("go", {".go"}, "autobuild", "ubuntu-24.04"),
+              ("javascript-typescript", {".js", ".jsx", ".mjs", ".cjs", ".ts", ".tsx"}, "none", "ubuntu-24.04"),
+              ("python", {".py"}, "none", "ubuntu-24.04"),
+              ("ruby", {".rb"}, "none", "ubuntu-24.04"),
+              ("rust", {".rs"}, "none", "ubuntu-24.04"),
+              ("swift", {".swift"}, "autobuild", "macos-15"),
+          )
+
+          matrix = []
+          for language, extensions, build_mode, runner in definitions:
+              if suffixes & extensions:
+                  matrix.append(
+                      {"language": language, "build_mode": build_mode, "runner": runner}
+                  )
+
+          java_extensions = {".java", ".kt", ".kts"}
+          if suffixes & java_extensions:
+              matrix.append(
+                  {
+                      "language": "java-kotlin",
+                      "build_mode": "autobuild" if suffixes & {".kt", ".kts"} else "none",
+                      "runner": "ubuntu-24.04",
+                  }
+              )
+
+          if not matrix:
+              raise SystemExit("no CodeQL-supported language was detected in tracked files")
+          print("matrix=" + json.dumps({"include": matrix}, separators=(",", ":")))
+          PY
+
+  analyze:
+    name: CodeQL / Analyze (${{ matrix.language }})
+    needs: detect
+    env:
+      # Keep CodeQL's file-coverage diagnostics enabled on pull requests.
+      # They are still diagnostic until the external verifier reconciles them
+      # with the project's immutable expected-source manifest.
+      CODEQL_ACTION_FILE_COVERAGE_ON_PRS: "true"
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.detect.outputs.matrix) }}
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 90
+    permissions:
+      actions: read
+      contents: read
+    steps:
+      - name: Checkout candidate without persisted credentials
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+          show-progress: false
+      - name: Initialize CodeQL with extended queries
+        uses: github/codeql-action/init@cdf488f595d80d6e07e03d4674febd5ab45fa938 # v4.37.9
+        with:
+          # Pin the CLI version selected by this immutable Action revision and
+          # exclude feature-flag/default-version drift. The Action may reuse an
+          # exact-version toolcache entry, so this portable job does not attest
+          # the CLI bytes; authoritative SAST is rerun by the external verifier.
+          tools: linked
+          languages: ${{ matrix.language }}
+          build-mode: ${{ matrix.build_mode }}
+          queries: security-extended,security-and-quality
+      - name: Analyze
+        id: analyze
+        uses: github/codeql-action/analyze@cdf488f595d80d6e07e03d4674febd5ab45fa938 # v4.37.9
+        with:
+          category: /language:${{ matrix.language }}
+          output: codeql-raw
+          post-processed-sarif-path: codeql-postprocessed
+          # Candidate workflows never receive code-scanning write authority.
+          # A non-candidate-executing job validates the post-processed SARIF,
+          # while the external verifier independently reruns applicable SAST
+          # and reconciles its own result to trusted-Git source scope.
+          upload: never
+          upload-database: false
+      - name: Transfer one exact untrusted SARIF to the validator
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: codeql-untrusted-sarif-${{ matrix.language }}-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: codeql-postprocessed/upload.sarif
+          if-no-files-found: error
+          include-hidden-files: false
+          retention-days: 1
+          compression-level: 9
+
+  validate:
+    name: CodeQL / Validate SARIF (${{ matrix.language }})
+    needs:
+      - detect
+      - analyze
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.detect.outputs.matrix) }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      actions: read
+    steps:
+      - name: Install pinned Python runtime
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.13.15"
+          check-latest: false
+      - name: Download the exact current-run SARIF artifact
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: codeql-untrusted-sarif-${{ matrix.language }}-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: incoming
+      - name: Validate, inventory, and enforce zero findings
+        shell: bash
+        env:
+          EXPECTED_LANGUAGE: ${{ matrix.language }}
+          EXPECTED_CATEGORY: /language:${{ matrix.language }}
+          SUBJECT_SHA: ${{ github.sha }}
+          REPOSITORY_ID: ${{ github.repository }}
+          WORKFLOW_REF: ${{ github.workflow_ref }}
+          RUN_ID: ${{ github.run_id }}
+          RUN_ATTEMPT: ${{ github.run_attempt }}
+        run: |
+          set -euo pipefail
+          python3 -I - <<'PY'
+          import gzip
+          import hashlib
+          import json
+          import math
+          import os
+          import shutil
+          import stat
+          from pathlib import Path
+
+          allowed_languages = {
+              "c-cpp",
+              "csharp",
+              "go",
+              "java-kotlin",
+              "javascript-typescript",
+              "python",
+              "ruby",
+              "rust",
+              "swift",
+          }
+          codeql_action_sha = "cdf488f595d80d6e07e03d4674febd5ab45fa938"
+          expected_cli_version = "2.26.4"
+          language = os.environ["EXPECTED_LANGUAGE"]
+          if language not in allowed_languages:
+              raise SystemExit(f"unsupported detector language: {language!r}")
+          category = os.environ["EXPECTED_CATEGORY"]
+          if category != f"/language:{language}":
+              raise SystemExit("language/category binding mismatch")
+
+          incoming = Path("incoming")
+          expected = incoming / "upload.sarif"
+          try:
+              entries = sorted(incoming.iterdir(), key=lambda item: item.name)
+              metadata = expected.lstat()
+          except OSError as error:
+              raise SystemExit(f"SARIF artifact is unavailable: {error}") from error
+          if entries != [expected] or not stat.S_ISREG(metadata.st_mode):
+              raise SystemExit("artifact must contain exactly one regular upload.sarif file")
+          if metadata.st_mode & 0o111:
+              raise SystemExit("SARIF must not be executable")
+          maximum_bytes = 32 * 1024 * 1024
+          if metadata.st_size < 2 or metadata.st_size > maximum_bytes:
+              raise SystemExit("SARIF size is outside the 2..33554432 byte boundary")
+          payload = expected.read_bytes()
+          if len(payload) != metadata.st_size:
+              raise SystemExit("SARIF changed while it was read")
+          if len(gzip.compress(payload, compresslevel=9, mtime=0)) > 10 * 1024 * 1024:
+              raise SystemExit("SARIF exceeds GitHub's compressed 10 MiB ingestion boundary")
+
+          def object_pairs(pairs):
+              result = {}
+              for key, value in pairs:
+                  if key in result:
+                      raise ValueError(f"duplicate JSON key: {key!r}")
+                  result[key] = value
+              return result
+
+          def reject_constant(value):
+              raise ValueError(f"non-finite JSON number: {value}")
+
+          def finite_float(value):
+              parsed = float(value)
+              if not math.isfinite(parsed):
+                  raise ValueError(f"non-finite JSON number: {value}")
+              return parsed
+
+          try:
+              document = json.loads(
+                  payload.decode("utf-8"),
+                  object_pairs_hook=object_pairs,
+                  parse_constant=reject_constant,
+                  parse_float=finite_float,
+              )
+          except (UnicodeDecodeError, ValueError, RecursionError) as error:
+              raise SystemExit(f"invalid bounded SARIF JSON: {error}") from error
+          if not isinstance(document, dict):
+              raise SystemExit("SARIF root must be an object")
+          if document.get("version") != "2.1.0":
+              raise SystemExit("only SARIF 2.1.0 is accepted")
+          if document.get("$schema") != "https://json.schemastore.org/sarif-2.1.0.json":
+              raise SystemExit("SARIF must identify the schema URI emitted by the pinned CodeQL toolchain")
+
+          nodes = 0
+          stack = [(document, 1)]
+          while stack:
+              value, depth = stack.pop()
+              nodes += 1
+              if nodes > 500_000 or depth > 64:
+                  raise SystemExit("SARIF exceeds the node/depth boundary")
+              if isinstance(value, dict):
+                  stack.extend((item, depth + 1) for item in value.values())
+              elif isinstance(value, list):
+                  stack.extend((item, depth + 1) for item in value)
+              elif isinstance(value, str) and len(value.encode("utf-8")) > 1024 * 1024:
+                  raise SystemExit("SARIF contains an oversized string")
+
+          runs = document.get("runs")
+          if not isinstance(runs, list) or len(runs) != 1:
+              raise SystemExit("one matrix language must produce exactly one SARIF run")
+          result_count = 0
+          invocation_count = 0
+          levels = {"error": 0, "warning": 0, "note": 0, "none": 0, "unspecified": 0}
+          notification_levels = {"error": 0, "warning": 0, "note": 0, "none": 0}
+          notification_ids = set()
+          overlay_disable_reasons = {
+              "disabled-by-environment-variable",
+              "disabled-by-repository-property",
+              "incompatible-build-mode",
+              "incompatible-codeql",
+              "incompatible-git",
+              "insufficient-disk-space",
+              "insufficient-memory",
+              "language-not-enabled",
+              "no-git-root",
+              "non-default-queries",
+              "not-pull-request-or-default-branch",
+              "overall-feature-not-enabled",
+              "diff-informed-analysis-not-enabled",
+              "skipped-due-to-cached-status",
+              "unable-to-determine-disk-usage",
+          }
+          for run in runs:
+              if not isinstance(run, dict):
+                  raise SystemExit("SARIF run must be an object")
+              tool = run.get("tool")
+              driver = tool.get("driver") if isinstance(tool, dict) else None
+              if (
+                  not isinstance(driver, dict)
+                  or driver.get("name") != "CodeQL"
+                  or driver.get("organization") != "GitHub"
+              ):
+                  raise SystemExit("SARIF tool identity must match the pinned CodeQL CLI output")
+              semantic_version = driver.get("semanticVersion")
+              if (
+                  not isinstance(semantic_version, str)
+                  or semantic_version != expected_cli_version
+              ):
+                  raise SystemExit(
+                      f"CodeQL SARIF semanticVersion must be {expected_cli_version}"
+                  )
+              extensions = tool.get("extensions", [])
+              results = run.get("results")
+              if not isinstance(extensions, list) or len(extensions) > 100:
+                  raise SystemExit("SARIF extensions exceed the supported boundary")
+              components = [("driver", driver)]
+              for index, extension in enumerate(extensions):
+                  if not isinstance(extension, dict):
+                      raise SystemExit("every CodeQL SARIF extension must be an object")
+                  extension_name = extension.get("name")
+                  if (
+                      not isinstance(extension_name, str)
+                      or not extension_name
+                      or len(extension_name.encode("utf-8")) > 1024
+                  ):
+                      raise SystemExit("every CodeQL SARIF extension must have a bounded name")
+                  components.append((f"extension[{index}]", extension))
+              notification_descriptor_ids = []
+              notification_descriptor_total = 0
+              for component_name, component in components:
+                  descriptors = component.get("notifications", [])
+                  if not isinstance(descriptors, list) or len(descriptors) > 10_000:
+                      raise SystemExit(
+                          f"{component_name} notification descriptors must be a bounded array"
+                      )
+                  component_ids = []
+                  for descriptor in descriptors:
+                      if not isinstance(descriptor, dict):
+                          raise SystemExit("every notification descriptor must be an object")
+                      descriptor_id = descriptor.get("id")
+                      descriptor_name = descriptor.get("name")
+                      if (
+                          not isinstance(descriptor_id, str)
+                          or not descriptor_id
+                          or len(descriptor_id.encode("utf-8")) > 1024
+                          or not isinstance(descriptor_name, str)
+                          or not descriptor_name
+                          or len(descriptor_name.encode("utf-8")) > 1024
+                      ):
+                          raise SystemExit(
+                              "every notification descriptor must have bounded id and name"
+                          )
+                      if descriptor_id in component_ids:
+                          raise SystemExit(
+                              "notification descriptor ids must be unique within a tool component"
+                          )
+                      component_ids.append(descriptor_id)
+                      notification_descriptor_total += 1
+                      if notification_descriptor_total > 10_000:
+                          raise SystemExit(
+                              "SARIF inventories more than 10000 notification descriptors"
+                          )
+                  notification_descriptor_ids.append(component_ids)
+
+              def resolve_notification_descriptor(reference):
+                  if not isinstance(reference, dict) or set(reference) - {
+                      "id",
+                      "index",
+                      "toolComponent",
+                  }:
+                      raise SystemExit("SARIF notification has an unsupported descriptor reference")
+                  descriptor_id = reference.get("id")
+                  descriptor_index = reference.get("index")
+                  if (
+                      not isinstance(descriptor_id, str)
+                      or not descriptor_id
+                      or len(descriptor_id.encode("utf-8")) > 1024
+                      or isinstance(descriptor_index, bool)
+                      or not isinstance(descriptor_index, int)
+                      or descriptor_index < 0
+                  ):
+                      raise SystemExit("SARIF notification descriptor reference is incomplete")
+                  component_index = 0
+                  tool_component = reference.get("toolComponent")
+                  if tool_component is not None:
+                      if (
+                          not isinstance(tool_component, dict)
+                          or set(tool_component) != {"index"}
+                          or isinstance(tool_component.get("index"), bool)
+                          or not isinstance(tool_component.get("index"), int)
+                          or tool_component["index"] < 0
+                      ):
+                          raise SystemExit("SARIF notification toolComponent reference is ambiguous")
+                      component_index = tool_component["index"] + 1
+                      if component_index >= len(components):
+                          raise SystemExit("SARIF notification references an unknown tool component")
+                  component_ids = notification_descriptor_ids[component_index]
+                  if (
+                      descriptor_index >= len(component_ids)
+                      or component_ids[descriptor_index] != descriptor_id
+                  ):
+                      raise SystemExit("SARIF notification descriptor id/index mismatch")
+                  return component_index, descriptor_index, descriptor_id
+              rule_ids = set()
+              for component_name, component in components:
+                  component_rules = component.get("rules", [])
+                  if not isinstance(component_rules, list):
+                      raise SystemExit(f"{component_name} rules must be an array")
+                  for rule in component_rules:
+                      if (
+                          not isinstance(rule, dict)
+                          or not isinstance(rule.get("id"), str)
+                          or not rule["id"]
+                          or len(rule["id"].encode("utf-8")) > 1024
+                      ):
+                          raise SystemExit("every inventoried CodeQL rule must have a bounded id")
+                      if rule["id"] in rule_ids:
+                          raise SystemExit("inventoried CodeQL rule ids must be unique across tool components")
+                      rule_ids.add(rule["id"])
+                      if len(rule_ids) > 25_000:
+                          raise SystemExit("SARIF inventories more than 25000 CodeQL rules")
+              if not rule_ids:
+                  raise SystemExit("SARIF must inventory at least one executed CodeQL rule")
+              if not isinstance(results, list) or len(results) > 25_000:
+                  raise SystemExit("SARIF must contain a bounded explicit results array")
+              properties = run.get("properties")
+              if (
+                  not isinstance(properties, dict)
+                  or properties.get("semmle.formatSpecifier") != "sarif-latest"
+              ):
+                  raise SystemExit("SARIF run must identify CodeQL's sarif-latest format")
+              # The linked CLI emits an invocation when diagnostics are
+              # exported. Absence is valid for a run with no exported
+              # diagnostics. The extended suites intentionally disable overlay
+              # analysis and can emit one telemetry-only diagnostic whose exact
+              # CodeQL 2.26.4 shape is allowlisted below. Everything else must
+              # be a linked, bounded none/note notification; warnings, errors,
+              # exceptions, and process-failure markers fail closed.
+              invocations = run.get("invocations")
+              if invocations is not None:
+                  if not isinstance(invocations, list) or len(invocations) != 1:
+                      raise SystemExit("SARIF invocations must be absent or contain exactly one invocation")
+                  invocation = invocations[0]
+                  if not isinstance(invocation, dict):
+                      raise SystemExit("SARIF invocation must be an object")
+                  if invocation.get("executionSuccessful") is not True:
+                      raise SystemExit("CodeQL SARIF invocation did not complete successfully")
+                  exit_code = invocation.get("exitCode")
+                  if exit_code is not None and (
+                      isinstance(exit_code, bool)
+                      or not isinstance(exit_code, int)
+                      or exit_code != 0
+                  ):
+                      raise SystemExit("CodeQL SARIF invocation has a nonzero or invalid exitCode")
+                  for failure_field in (
+                      "exitSignalName",
+                      "exitSignalNumber",
+                      "processStartFailureMessage",
+                  ):
+                      if failure_field in invocation:
+                          raise SystemExit(
+                              f"CodeQL SARIF invocation contains failure marker {failure_field}"
+                          )
+                  for notification_field in (
+                      "toolExecutionNotifications",
+                      "toolConfigurationNotifications",
+                  ):
+                      notifications = invocation.get(notification_field, [])
+                      if not isinstance(notifications, list) or len(notifications) > 10_000:
+                          raise SystemExit(
+                              f"{notification_field} must be a bounded notification array"
+                          )
+                      for notification in notifications:
+                          if not isinstance(notification, dict):
+                              raise SystemExit("SARIF notification must be an object")
+                          component_index, descriptor_index, descriptor_id = (
+                              resolve_notification_descriptor(notification.get("descriptor"))
+                          )
+                          message = notification.get("message")
+                          if not isinstance(message, dict):
+                              raise SystemExit("SARIF notification must contain a message object")
+                          level = notification.get("level", "warning")
+                          if level not in notification_levels:
+                              raise SystemExit(
+                                  f"unsupported SARIF notification level: {level!r}"
+                              )
+                          notification_levels[level] += 1
+                          notification_ids.add(descriptor_id)
+                          if "exception" in notification:
+                              raise SystemExit(
+                                  "CodeQL emitted an adverse configuration/execution notification"
+                              )
+                          if descriptor_id == "codeql-action/overlay-disabled":
+                              descriptor = components[component_index][1]["notifications"][
+                                  descriptor_index
+                              ]
+                              properties = notification.get("properties")
+                              attributes = (
+                                  properties.get("attributes")
+                                  if isinstance(properties, dict)
+                                  else None
+                              )
+                              reason = (
+                                  attributes.get("reason")
+                                  if isinstance(attributes, dict)
+                                  else None
+                              )
+                              if (
+                                  notification_field != "toolExecutionNotifications"
+                                  or component_index != 0
+                                  or set(notification) != {
+                                      "descriptor",
+                                      "level",
+                                      "message",
+                                      "properties",
+                                      "timeUtc",
+                                  }
+                                  or notification["descriptor"]
+                                  != {
+                                      "id": "codeql-action/overlay-disabled",
+                                      "index": descriptor_index,
+                                  }
+                                  or level != "none"
+                                  or message != {"text": ""}
+                                  or not isinstance(notification.get("timeUtc"), str)
+                                  or not notification["timeUtc"]
+                                  or set(descriptor) != {
+                                      "id",
+                                      "name",
+                                      "shortDescription",
+                                      "fullDescription",
+                                      "defaultConfiguration",
+                                  }
+                                  or descriptor.get("id")
+                                  != "codeql-action/overlay-disabled"
+                                  or descriptor.get("name")
+                                  != "codeql-action/overlay-disabled"
+                                  or descriptor.get("shortDescription")
+                                  != {"text": "Overlay analysis disabled"}
+                                  or descriptor.get("fullDescription")
+                                  != {"text": "Overlay analysis disabled"}
+                                  or descriptor.get("defaultConfiguration")
+                                  != {"enabled": True}
+                                  or not isinstance(properties, dict)
+                                  or set(properties) != {"attributes", "visibility"}
+                                  or not isinstance(attributes, dict)
+                                  or set(attributes) != {"reason"}
+                                  or reason not in overlay_disable_reasons
+                                  or properties.get("visibility")
+                                  != {"statusPage": False, "telemetry": True}
+                              ):
+                                  raise SystemExit(
+                                      "CodeQL overlay telemetry does not match the pinned allowlist"
+                                  )
+                          else:
+                              if level in {"warning", "error"}:
+                                  raise SystemExit(
+                                      "CodeQL emitted an adverse configuration/execution notification"
+                                  )
+                              if not any(
+                                  isinstance(message.get(field), str) and message[field]
+                                  for field in ("text", "markdown")
+                              ):
+                                  raise SystemExit(
+                                      "non-telemetry SARIF notification must contain a nonempty message"
+                                  )
+                  invocation_count = 1
+              automation = run.get("automationDetails")
+              automation_id = automation.get("id") if isinstance(automation, dict) else None
+              if automation_id not in {category, category + "/"}:
+                  raise SystemExit("SARIF automation category does not match the matrix language")
+              for result in results:
+                  if not isinstance(result, dict):
+                      raise SystemExit("SARIF result must be an object")
+                  rule = result.get("rule")
+                  rule_id = result.get("ruleId")
+                  if not isinstance(rule_id, str) or not rule_id:
+                      rule_id = rule.get("id") if isinstance(rule, dict) else None
+                  if not isinstance(rule_id, str) or not rule_id:
+                      raise SystemExit("every SARIF result must identify its rule")
+                  level = result.get("level", "unspecified")
+                  if level not in levels:
+                      raise SystemExit(f"unsupported SARIF result level: {level!r}")
+                  levels[level] += 1
+              result_count += len(results)
+
+          if result_count != 0:
+              raise SystemExit(
+                  f"CodeQL produced {result_count} finding(s); the starter's zero-finding policy denies admission"
+              )
+
+          validated = Path("validated")
+          validated.mkdir(mode=0o700)
+          sarif_name = f"{language}.sarif"
+          shutil.copyfile(expected, validated / sarif_name)
+          manifest = {
+              "schema_version": "mergegrounds-codeql-sarif-manifest/v1",
+              "repository": os.environ["REPOSITORY_ID"],
+              "subject_sha": os.environ["SUBJECT_SHA"],
+              "workflow_ref": os.environ["WORKFLOW_REF"],
+              "run_id": os.environ["RUN_ID"],
+              "run_attempt": os.environ["RUN_ATTEMPT"],
+              "language": language,
+              "category": category,
+              "tool": {
+                  "action_sha": codeql_action_sha,
+                  "name": "CodeQL",
+                  "organization": "GitHub",
+                  "semantic_version": expected_cli_version,
+              },
+              "sarif": {
+                  "path": sarif_name,
+                  "sha256": "sha256:" + hashlib.sha256(payload).hexdigest(),
+                  "bytes": len(payload),
+                  "runs": len(runs),
+                  "invocations": invocation_count,
+                  "rules": len(rule_ids),
+                  "results": result_count,
+                  "levels": levels,
+                  "notification_levels": notification_levels,
+                  "notification_ids": sorted(notification_ids),
+              },
+          }
+          (validated / f"{language}.manifest.json").write_text(
+              json.dumps(manifest, sort_keys=True, separators=(",", ":")) + "\n",
+              encoding="utf-8",
+          )
+          PY
+      - name: Retain validated SARIF and subject manifest
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: codeql-validated-sarif-${{ matrix.language }}-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            validated/${{ matrix.language }}.sarif
+            validated/${{ matrix.language }}.manifest.json
+          if-no-files-found: error
+          include-hidden-files: false
+          retention-days: 30
+          compression-level: 9
+
+  gate:
+    name: CodeQL
+    if: ${{ always() }}
+    needs:
+      - detect
+      - analyze
+      - validate
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - name: Fail closed unless detection and every language analysis passed
+        shell: bash
+        env:
+          DETECT_RESULT: ${{ needs.detect.result }}
+          ANALYZE_RESULT: ${{ needs.analyze.result }}
+          VALIDATE_RESULT: ${{ needs.validate.result }}
+        run: |
+          set -euo pipefail
+          if [[ "$DETECT_RESULT" != success || "$ANALYZE_RESULT" != success || "$VALIDATE_RESULT" != success ]]; then
+            echo "CodeQL failed closed: detect=$DETECT_RESULT analyze=$ANALYZE_RESULT validate=$VALIDATE_RESULT" >&2
+            exit 1
+          fi

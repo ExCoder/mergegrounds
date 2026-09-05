@@ -1,0 +1,15 @@
+[run]
+branch = True
+parallel = True
+patch = subprocess
+relative_files = True
+
+[report]
+fail_under = 90
+precision = 2
+show_missing = True
+skip_covered = False
+
+[json]
+pretty_print = True
+show_contexts = False

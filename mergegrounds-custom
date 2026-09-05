@@ -1,0 +1,9 @@
+#!/usr/bin/env sh
+set -eu
+
+if [ "$#" -ne 1 ]; then
+  echo "usage: mergegrounds-custom {format|lint|typecheck|unit|coverage|mutation|security|build|fuzz}" >&2
+  exit 64
+fi
+
+exec python3 -I scripts/self_check.py "$1"

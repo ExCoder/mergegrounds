@@ -1,0 +1,37 @@
+{
+  "action_sha": "cdf488f595d80d6e07e03d4674febd5ab45fa938",
+  "contract_kind": "synthetic-contract-derived-from-pinned-action-source-and-cli-bytecode",
+  "defaults_source": "https://github.com/github/codeql-action/blob/cdf488f595d80d6e07e03d4674febd5ab45fa938/src/defaults.json",
+  "defaults_source_sha256": "8046c23a88cb86bcc272a2c677d7f8fed0b2315249d2918311ef9f7df0aeef18",
+  "driver": {
+    "name": "CodeQL",
+    "organization": "GitHub"
+  },
+  "expected_cli_semantic_version": "2.26.4",
+  "grouping_source": "https://github.com/github/codeql-action/blob/cdf488f595d80d6e07e03d4674febd5ab45fa938/CHANGELOG.md",
+  "grouping_source_sha256": "e38afa472d70d5a0ed2e279e9b82b7949337642ee4e615ba71a069f70c77596f",
+  "invocation_source": "https://github.com/github/codeql-action/blob/cdf488f595d80d6e07e03d4674febd5ab45fa938/pr-checks/checks/diagnostics-export.yml",
+  "invocation_source_sha256": "42fdd6803e3493ea70273d11acde6a4147382490ceb11993ca9b6f2342b2b877",
+  "identity_source": "https://github.com/github/codeql-action/blob/cdf488f595d80d6e07e03d4674febd5ab45fa938/src/sarif/index.ts",
+  "identity_source_sha256": "9a6e56ef9333994e8fe618a1a05394af047b7ee81a6f807142059b6251226afb",
+  "diagnostics_source": "https://github.com/github/codeql-action/blob/cdf488f595d80d6e07e03d4674febd5ab45fa938/src/diagnostics.ts",
+  "diagnostics_source_sha256": "ffa087d51359915ed9c81d0ab96436ddb500b3997c482d7737feda8f20d4aa7b",
+  "overlay_source": "https://github.com/github/codeql-action/blob/cdf488f595d80d6e07e03d4674febd5ab45fa938/src/overlay/diagnostics.ts",
+  "overlay_source_sha256": "8562ef9baea649e49dfaaeb43cab6a335ecaf3cb2be695c746c4cc941524f5b8",
+  "cli_jar_sha256": "a7f23580d957fceac70e5efe05af3c1c5208ca9b675b5d36593404aa5b694d54",
+  "bundle_release": "https://github.com/github/codeql-action/releases/tag/codeql-bundle-v2.26.4",
+  "bundle_release_id": 374360615,
+  "bundle_release_immutable": true,
+  "bundle_digest_scope": "official-release-fallback-assets-not-runtime-byte-attestation",
+  "bundle_linux_sha256": "48e1ab8b874d57bd6fd7c90fefee75addc5a45e9bd063982df9beb45a62dd5d3",
+  "bundle_linux_zstd_sha256": "a9872c9075f85374a8d03546263c6dc01fde50a29baea9fc08dcc6b25cc2efd5",
+  "bundle_macos_sha256": "d44262df6213ee37aef14e4563f92f941b3abec78d18f38c4d645c795a5f018c",
+  "bundle_macos_zstd_sha256": "546ab3318398602ca1861253ea3b772a3f76512476938e8f03a0c0adf07e0ef7",
+  "bundle_windows_sha256": "b36b6fd43ae72fae8a10b3cbd74dd71718ad2a5707b1b201f5ff74d8e088c034",
+  "bundle_windows_zstd_sha256": "a5ac7224b4045933dbada09a68321faa1f21e8a63359c73a009a23cc99672f76",
+  "rule": {
+    "id": "js/unused-local-variable",
+    "name": "js/unused-local-variable"
+  },
+  "schema": "https://json.schemastore.org/sarif-2.1.0.json"
+}

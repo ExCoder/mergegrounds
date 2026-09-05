@@ -1,0 +1,49 @@
+schema_version = 1
+id = "rust"
+ecosystem = "rust"
+priority = 100
+
+[detect]
+all_files = ["Cargo.toml"]
+any_files = []
+any_globs = []
+
+[toolchain]
+required_commands = ["bash", "python3", "cargo", "rustc", "cargo-fmt", "cargo-clippy", "cargo-llvm-cov", "cargo-audit", "cargo-mutants"]
+required_files = ["Cargo.lock", "rust-toolchain.toml"]
+required_any_files = []
+required_any_globs = []
+setup_hint = "Use committed Cargo.lock and rust-toolchain.toml with an exact release channel, not floating stable/beta/nightly. The unit discovery command requires Bash pipefail and the same trusted Python 3 runtime that executes MergeGrounds; it denies a successful cargo invocation that lists zero tests. Preinstall locked cargo-llvm-cov, cargo-audit, and cargo-mutants binaries in the trusted runner image. Start cargo-mutants at two or three jobs; aggressive parallelism can create false timeouts."
+
+[commands]
+format = ["cargo fmt --all -- --check"]
+lint = ["cargo clippy --workspace --all-targets --all-features --locked -- -D warnings"]
+typecheck = ["cargo check --workspace --all-targets --all-features --locked"]
+unit = ["cargo test --workspace --all-targets --all-features --locked", "cargo test --workspace --all-targets --all-features --locked -- --list --format terse | python3 -I -c 'import sys; tests=sum(1 for line in sys.stdin if line.rstrip().endswith(\": test\")); print(f\"rust-libtest listed_tests={tests}\"); raise SystemExit(0 if tests > 0 else \"Rust unit stage requires at least one discovered test\")'"]
+coverage = ["cargo llvm-cov --workspace --all-features --locked --lcov --output-path lcov.info --fail-under-lines 90"]
+mutation = ["cargo mutants --all-features --jobs 2 --output mutants.out --cargo-arg=--locked"]
+security = ["cargo audit"]
+build = ["cargo build --workspace --all-targets --all-features --release --locked"]
+
+[thresholds]
+line_coverage = 90
+branch_coverage = 85
+mutation_score = 100
+
+[metrics.coverage]
+format = "lcov"
+paths = ["lcov.info"]
+required = true
+branch_required = false
+
+[metrics.mutation]
+format = "cargo-mutants"
+paths = ["mutants.out/outcomes.json"]
+required = true
+
+[artifacts]
+unit = []
+coverage = ["lcov.info"]
+mutation = ["mutants.out/outcomes.json", "mutants.out/missed.txt", "mutants.out/timeout.txt", "mutants.out/unviable.txt"]
+security = []
+build = ["target/release/**"]

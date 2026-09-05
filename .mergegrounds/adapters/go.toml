@@ -1,0 +1,49 @@
+schema_version = 1
+id = "go"
+ecosystem = "go"
+priority = 100
+
+[detect]
+all_files = ["go.mod"]
+any_files = []
+any_globs = []
+
+[toolchain]
+required_commands = ["bash", "python3", "go", "gofmt", "golangci-lint", "gremlins", "govulncheck"]
+required_files = ["go.sum"]
+required_any_files = []
+required_any_globs = []
+setup_hint = "Provision the Go version selected by go.mod and lock CI tools to reviewed versions. Keep go.mod and go.sum read-only during verification; configure GOFLAGS=-mod=readonly in the runner. The unit command requires Bash pipefail and the same trusted Python 3 runtime that executes MergeGrounds so go test JSON cannot hide a producer failure and a zero-test run is denied. Install Gremlins and govulncheck in the trusted runner image, not from PR code. Tune Gremlins workers only after a stable one-worker baseline."
+
+[commands]
+format = ["test -z \"$(gofmt -l .)\""]
+lint = ["GOFLAGS=-mod=readonly golangci-lint run --timeout=5m"]
+typecheck = ["go vet -mod=readonly ./..."]
+unit = ["go test -mod=readonly -race -shuffle=on -count=1 -json ./... | python3 -I -c 'import json,sys; from collections import Counter; counts=Counter((event.get(\"Action\"),bool(event.get(\"Test\"))) for event in (json.loads(line) for line in sys.stdin if line.strip())); passed=counts[(\"pass\",True)]; failed=counts[(\"fail\",True)]+counts[(\"fail\",False)]; print(f\"go-test-json passed_tests={passed} failed_events={failed}\"); raise SystemExit(0 if passed > 0 and failed == 0 else \"Go unit stage requires at least one passed test and no failed event\")'"]
+coverage = ["go test -mod=readonly -race -shuffle=on -count=1 -covermode=atomic -coverprofile=coverage.out ./...", "go tool cover -func=coverage.out"]
+mutation = ["GOFLAGS=-mod=readonly gremlins unleash --integration --threshold-efficacy=85 --threshold-mcover=90 --output=gremlins.json"]
+security = ["GOFLAGS=-mod=readonly govulncheck ./..."]
+build = ["go build -mod=readonly -trimpath ./..."]
+
+[thresholds]
+line_coverage = 90
+branch_coverage = 85
+mutation_score = 85
+
+[metrics.coverage]
+format = "go-cover"
+paths = ["coverage.out"]
+required = true
+branch_required = false
+
+[metrics.mutation]
+format = "gremlins-json"
+paths = ["gremlins.json"]
+required = true
+
+[artifacts]
+unit = []
+coverage = ["coverage.out"]
+mutation = ["gremlins.json"]
+security = []
+build = []

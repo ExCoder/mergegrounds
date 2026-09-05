@@ -1,0 +1,16 @@
+version: 2
+updates:
+  # Dependabot preserves and updates the human-readable version comments next to
+  # immutable action SHAs. Ecosystem dependencies belong in stack adapters.
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "06:17"
+      timezone: Etc/UTC
+    open-pull-requests-limit: 5
+    rebase-strategy: auto
+    commit-message:
+      prefix: ci
+      include: scope

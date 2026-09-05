@@ -1,0 +1,24 @@
+default_install_hook_types: [pre-push]
+fail_fast: true
+minimum_pre_commit_version: "3.7.0"
+repos:
+  - repo: local
+    hooks:
+      - id: mergegrounds-fast
+        name: MergeGrounds fast gate
+        entry: python3 -I scripts/mergegrounds.py run --profile fast
+        language: system
+        pass_filenames: false
+        stages: [pre-push]
+      - id: mergegrounds-policy
+        name: MergeGrounds policy gate
+        entry: python3 -I scripts/mergegrounds.py verify-repo --strict
+        language: system
+        pass_filenames: false
+        stages: [pre-push]
+      - id: mergegrounds-ai-policy
+        name: MergeGrounds conditional AI-product policy
+        entry: python3 -I scripts/ai_assurance.py validate-policy
+        language: system
+        pass_filenames: false
+        stages: [pre-push]

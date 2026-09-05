@@ -1,0 +1,45 @@
+name: Feature request
+description: Propose a falsifiable capability or workflow improvement.
+title: "[Feature]: "
+labels: []
+body:
+  - type: markdown
+    attributes:
+      value: >-
+        Describe a user outcome and proof, not only an implementation. Do not include
+        vulnerabilities, secrets, customer data, private prompts, or chain-of-thought.
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem and affected user
+      description: Who is blocked, in what workflow, and what happens today?
+    validations:
+      required: true
+  - type: textarea
+    id: outcome
+    attributes:
+      label: Observable outcome
+      description: State how an independent reviewer can tell that the problem is solved.
+    validations:
+      required: true
+  - type: textarea
+    id: failures
+    attributes:
+      label: Failure and abuse cases
+      description: What must remain denied, and what new trust boundary could this create?
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Include existing controls, workarounds, and the cost of doing nothing.
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Proposed acceptance evidence
+      description: Suggest positive, negative, adversarial, and recovery fixtures where relevant.
+    validations:
+      required: true

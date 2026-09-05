@@ -1,0 +1,5 @@
+schema_version = 1
+id = "fast"
+description = "Fast developer feedback only; never sufficient for admission to a protected branch."
+stages = ["format", "lint", "typecheck", "unit"]
+required_stages = ["format", "lint", "typecheck", "unit"]

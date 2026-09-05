@@ -1,0 +1,55 @@
+name: Defect report
+description: Report a reproducible defect that is not a security vulnerability.
+title: "[Bug]: "
+labels: []
+body:
+  - type: markdown
+    attributes:
+      value: >-
+        Do not report vulnerabilities, credentials, personal data, or confidential material here.
+        Follow SECURITY.md for private reporting.
+  - type: checkboxes
+    id: safety
+    attributes:
+      label: Safety check
+      options:
+        - label: I confirm this is not a security vulnerability and contains no secrets or sensitive data.
+          required: true
+  - type: textarea
+    id: observed
+    attributes:
+      label: Observed behavior
+      description: Include the smallest reproducible example and sanitized logs.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: Include OS, runtime/toolchain versions, and the exact MergeGrounds version or commit.
+    validations:
+      required: true
+  - type: dropdown
+    id: ai_involvement
+    attributes:
+      label: AI involvement
+      options:
+        - None known
+        - AI helped produce the affected code
+        - AI helped diagnose or reproduce the defect
+        - Unknown
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Verification evidence
+      description: Provide sanitized commands, failing tests, and links to non-sensitive evidence.
+    validations:
+      required: true

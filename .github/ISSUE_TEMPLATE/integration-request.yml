@@ -1,0 +1,52 @@
+name: Integration request
+description: Request a stack, report format, CI provider, or developer-tool integration.
+title: "[Integration]: "
+labels: []
+body:
+  - type: markdown
+    attributes:
+      value: >-
+        Integration support requires a stable machine-readable contract and negative
+        fixtures. A console log or tool exit code alone is not sufficient evidence.
+  - type: input
+    id: integration
+    attributes:
+      label: Integration and version
+      placeholder: Tool or platform name and exact tested version
+    validations:
+      required: true
+  - type: textarea
+    id: use_case
+    attributes:
+      label: Repository shape and use case
+      description: Include languages, package manager, monorepo layout, runner OS, and risk tier.
+    validations:
+      required: true
+  - type: textarea
+    id: reports
+    attributes:
+      label: Machine-readable outputs
+      description: Link official schemas/docs and describe coverage, mutation, error, and scope semantics.
+    validations:
+      required: true
+  - type: textarea
+    id: trust
+    attributes:
+      label: Trust and execution boundary
+      description: State credentials, network access, source of tool bytes, isolation, and who can alter the judge.
+    validations:
+      required: true
+  - type: textarea
+    id: fixtures
+    attributes:
+      label: Negative fixtures
+      description: List safe defects that must fail, including stale, partial, malformed, and unsupported output.
+    validations:
+      required: true
+  - type: checkboxes
+    id: contribution
+    attributes:
+      label: Contribution
+      options:
+        - label: I can help maintain a runnable fixture for this integration.
+          required: false

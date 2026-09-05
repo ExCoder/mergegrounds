@@ -1,0 +1,8 @@
+schema_version = 1
+
+# Exceptions are arrays of tables. An empty file means no active exceptions.
+# The normative schema, TTLs, scopes, approval quorums, weighted budget, and
+# break-glass prohibition are defined in the skill reference `exceptions.md`.
+# A real record uses `[[exceptions]]`, schema
+# `mergegrounds/exception/v1`, and every field validated by mergegrounds.py.
+exceptions = []

@@ -1,0 +1,77 @@
+name: Release Artifacts
+
+on:
+  push:
+    tags:
+      - "v[0-9]+.[0-9]+.[0-9]+"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mergegrounds-release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Release / Verify and build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout complete tagged revision without persisted credentials
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+          show-progress: false
+      - name: Install pinned Python runtime
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.13.15"
+          check-latest: false
+      - name: Install hash-locked source verification tools
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m pip install --disable-pip-version-check --require-hashes -r requirements-self.lock
+      - name: Verify version identity and repository policy
+        shell: bash
+        env:
+          RELEASE_REF: ${{ github.ref_name }}
+          RELEASE_EVENT: ${{ github.event_name }}
+        run: |
+          set -euo pipefail
+          version="$(tr -d '\n' < VERSION)"
+          [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]
+          if [[ "$RELEASE_EVENT" == push ]]; then
+            [[ "$RELEASE_REF" == "v${version}" ]]
+          fi
+          python3 -I scripts/mergegrounds.py verify-repo --strict
+          python3 -I scripts/ai_assurance.py validate-policy
+      - name: Run the source unit suite
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -I -m unittest discover -s tests -v
+      - name: Build deterministic archives and checksums twice
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -I scripts/build_release.py --output-dir release-first
+          python3 -I scripts/build_release.py --output-dir release-second
+          cmp release-first/SHA256SUMS release-second/SHA256SUMS
+          cmp release-first/mergegrounds-*.tar.gz release-second/mergegrounds-*.tar.gz
+          cmp release-first/mergegrounds-*.zip release-second/mergegrounds-*.zip
+          mv release-first release-dist
+      - name: Retain verified release candidate
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: mergegrounds-release-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: release-dist/*
+          if-no-files-found: error
+          include-hidden-files: false
+          retention-days: 14
+          compression-level: 0
