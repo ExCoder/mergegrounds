@@ -42,7 +42,7 @@
     },
     ".github/workflows/codeql.yml": {
       "mode": "100644",
-      "sha256": "873ae0feb38856ee5670903a95645f5eac100982f28d946437c8c2932763c7be"
+      "sha256": "64e4bc11a1209d51073267d9d9c480e573aa459ecff35246de95ec169ae41b49"
     },
     ".github/workflows/full-scan.yml": {
       "mode": "100644",
@@ -198,7 +198,7 @@
     },
     "scripts/ai_assurance.py": {
       "mode": "100755",
-      "sha256": "f87ffafcb7b55f871f30cea4260c8dde5cebc995285cad14904f04059b02ec2d"
+      "sha256": "b70fd26a8fc88b7d1cfc86a96fe102bafd7f187b3b7d0e51066b5712be51617b"
     },
     "scripts/apply-github-ruleset.sh": {
       "mode": "100755",
@@ -206,7 +206,7 @@
     },
     "scripts/bootstrap.py": {
       "mode": "100755",
-      "sha256": "8423da5d45609a2d59b8b5e2e1362da8afe25c058a1be0f74e43d48e4671b24e"
+      "sha256": "06985a64ebc373286d2552bff474771db139febcbf80452f3d5b5c2eec6e1676"
     },
     "scripts/build_release.py": {
       "mode": "100644",
@@ -218,11 +218,11 @@
     },
     "scripts/mergegrounds.py": {
       "mode": "100755",
-      "sha256": "91ad1f4259f5d3b7a92c9c418357aa9637c531c73b438a10c1df8cfb42d887ce"
+      "sha256": "f05dab63b82b30995fd6bdd178bfb9d6b07f54759c000797568108023041b59b"
     },
     "scripts/scaffold_change.py": {
       "mode": "100755",
-      "sha256": "cfb89c45a794442a32d6aea0e24afaf5c74279ebb38102bb884ac2dcce571b43"
+      "sha256": "eac9273428b9b02921c8ea34a6303f1d25bd8fd1261b04b720e8358d1251079d"
     },
     "scripts/self_check.py": {
       "mode": "100644",
@@ -277,7 +277,7 @@
       "sha256": "e8b7ed1d367d6179ba5cc50f7560071ddb6944760dfb3db17fc12129db5c13dc"
     }
   },
-  "generated_at": "2026-09-05T18:06:41Z",
-  "git_commit": "d48800ad4d16de676183647b72c1eafefc84e7f6",
+  "generated_at": "2026-09-05T18:38:03Z",
+  "git_commit": "908e627c8dd0b4dd2f1205f83744bc2123bfa43b",
   "schema_version": 2
 }
