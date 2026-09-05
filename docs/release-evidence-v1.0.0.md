@@ -29,14 +29,14 @@ The following results were reproduced on the clean release candidate on
 | Evidence | Result | Boundary |
 |---|---|---|
 | Standard-library unit suite | 327 tests passed | Test success is not proof of absence of defects |
-| Source coverage | 90.39% line; 85.15% branch | Aggregate coverage does not prove required semantic scope |
+| Source coverage | 90.37% line; 85.17% branch | Aggregate coverage does not prove required semantic scope |
 | Curated critical mutations | 6/6 killed | Curated source mutations do not replace a project mutation engine |
 | Parser and hostile-input probes | 7 known-bad classes plus 2,000 randomized cases denied or handled as specified | Fuzzing is bounded by the implemented harness and seed space |
 | Strict lint and types | Ruff and strict mypy passed | Static tools cover their configured rules and analyzed paths only |
 | Workflow policy | actionlint and repository workflow hardening checks passed | Repository checks cannot prove external GitHub settings |
 | Full self-dogfood profile | 18/18 stages passed | The upstream source-only adapter is not copied as an activated downstream adapter |
 | Deterministic source build | repeated archives matched | Reproducibility applies to the declared source package inputs |
-| CodeQL | GitHub run `33984687386` passed, including zero-finding SARIF validation | Portable CodeQL remains diagnostic until an external verifier reruns applicable SAST against the trusted subject and proves scope |
+| CodeQL | GitHub run `33984687386` passed, including zero-finding SARIF validation | The workflow uses `upload: never`, so GitHub Code Scanning UI/API is intentionally not populated; portable CodeQL remains diagnostic until an external verifier reruns applicable SAST against the trusted subject and proves scope |
 | MergeGrounds GitHub workflow | GitHub run `33984687316` passed | Final tagged commit requires a fresh successful run |
 
 The local evidence file was generated as
@@ -56,9 +56,11 @@ Promotion is denied until every item below is rechecked against external state:
 3. The active ruleset applies to administrators with no bypass, requires pull
    requests, linear history, signed commits, and the stable admission checks,
    and rejects force-push and deletion.
-4. Private vulnerability reporting, dependency and secret alerts, code
-   scanning, immutable releases, topics, description, and community surfaces
-   are verified from GitHub state.
+4. Private vulnerability reporting, dependency and secret alerts, immutable
+   releases, topics, description, and community surfaces are verified from
+   GitHub state. The custom CodeQL check and its locally validated SARIF are
+   verified through the required workflow; no GitHub Code Scanning UI/API
+   analysis is claimed while SARIF upload remains disabled.
 5. The unsigned annotated `v1.0.0` tag peels to the exact verified default-
    branch commit. The tag is not represented as GPG- or SSH-signed.
 6. The tag-triggered workflow succeeds and retains exactly two archives,
