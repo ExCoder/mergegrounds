@@ -1,16 +1,73 @@
 # MergeGrounds
 
-MergeGrounds is a Codex skill and a GitHub-ready starter repository for teams that treat AI-assisted code as untrusted until independent engineering evidence admits the exact revision.
+**Make AI-assisted changes earn the merge with exact-revision, fail-closed
+evidence.**
+
+MergeGrounds is a Codex skill and GitHub-ready starter for teams that treat
+AI-assisted code as untrusted until independent engineering evidence admits the
+exact revision.
 
 Project website: [mergegrounds.chawax.chatgpt.site](https://mergegrounds.chawax.chatgpt.site) · Source: [github.com/ExCoder/mergegrounds](https://github.com/ExCoder/mergegrounds)
 
-It does not promise “safe code.” No linter, model, scanner, or test suite can prove that. The portable runner fails closed on missing tools, weak metrics, replayable reports, persistent source drift, malformed exception records, and inconclusive results. The stronger admission claim additionally requires the external trusted verifier, protected settings, identities, and isolated execution described below.
+Version target: `v1.0.0`. Before installing, require the public
+[immutable release](https://github.com/ExCoder/mergegrounds/releases/tag/v1.0.0),
+checksums, and attestations to exist and verify; stop if they do not. The
+repository supplies Portable controls. Maximum Assurance additionally requires
+an independently administered verifier, protected settings and identities, and
+isolated execution.
+
+MergeGrounds does not promise “safe code.” No linter, model, scanner, or test
+suite can prove that.
+
+## 90-second proof
+
+Run the already released, dependency-free educational model before installing
+the control plane:
+
+```bash
+git clone --branch v1.0.1 --depth 1 \
+  https://github.com/ExCoder/mergegrounds-demo.git
+cd mergegrounds-demo
+python3 demo.py
+```
+
+The final line must be:
+
+```text
+DEMO PASSED: 1 admitted control; 5 negative controls denied
+```
+
+The demo makes one narrow behavior reproducible: exact, complete evidence is
+admitted, while stale, wrong-revision, incomplete, survived-mutant, and missing
+evidence is denied. It is an educational model, not a production verifier or a
+claim that admitted code is safe.
+
+After the core `v1.0.0` release above verifies, preview its bootstrap plan
+against a repository without changing that repository:
+
+```bash
+git clone --branch v1.0.0 --depth 1 \
+  https://github.com/ExCoder/mergegrounds.git
+python3 -I mergegrounds/scripts/bootstrap.py \
+  --target /absolute/path/to/your-repository
+```
+
+The preview reports `CREATE` and `CONFLICT` entries and exits without writing.
+Review every entry before any later `--apply` step.
+
+The founding `v1.0.0` is explicitly a single-maintainer bootstrap. Reproducible
+bug reports, negative fixtures, adapter evidence, and design feedback are
+welcome now. Authoritative post-`v1.0.0` control-plane merges and releases remain
+blocked until the two independent human reviewer seats in
+[GOVERNANCE.md](GOVERNANCE.md) are filled and enforced.
 
 ## What is included
 
-- a reusable Codex skill for bootstrap, audit, hardening, and gate repair;
+- a reusable Codex skill for bootstrap, control review, hardening, and gate repair;
 - a dependency-free Python 3.11+ policy runner and evidence generator;
-- native adapters for Node/TypeScript, Python, Go, Rust, Maven, Gradle, .NET, PHP, and a strict custom protocol;
+- reference adapter definitions for Node/TypeScript, Python, Go, Rust, Maven,
+  Gradle, .NET, PHP, and a strict custom protocol; each target still requires
+  project-specific command review and end-to-end fixture validation;
 - parsed coverage and mutation reports with independent threshold enforcement;
 - clean-revision local pre-push gates (pre-commit is deliberately not claimed as exact-revision evidence);
 - immutable-SHA GitHub Actions for PR checks, read-only supplemental CodeQL, dependency review, secret scanning, schedule-only OpenSSF Scorecard publication, and scheduled full validation;

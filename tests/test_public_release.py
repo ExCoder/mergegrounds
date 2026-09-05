@@ -22,6 +22,30 @@ SPEC.loader.exec_module(build_release)
 
 
 class PublicReleaseTests(unittest.TestCase):
+    def test_readme_leads_with_reproducible_first_value_and_honest_status(self) -> None:
+        readme = (ROOT / "README.md").read_text(encoding="utf-8")
+        self.assertIn("## 90-second proof", readme)
+        first_value = readme.index("## 90-second proof")
+        feature_inventory = readme.index("## What is included")
+
+        self.assertLess(first_value, feature_inventory)
+        first_screen = readme[:feature_inventory]
+        for expected in (
+            "git clone --branch v1.0.1 --depth 1",
+            "https://github.com/ExCoder/mergegrounds-demo.git",
+            "python3 demo.py",
+            "DEMO PASSED: 1 admitted control; 5 negative controls denied",
+            "educational model",
+            "v1.0.0",
+            "Maximum Assurance",
+            "two independent human reviewer seats",
+        ):
+            self.assertIn(expected, first_screen)
+
+        self.assertIn("reference adapter definitions", readme)
+        self.assertIn("end-to-end", readme)
+        self.assertNotIn("a reusable Codex skill for bootstrap, audit", readme)
+
     def test_release_build_is_reproducible_and_manifest_bound(self) -> None:
         with tempfile.TemporaryDirectory() as first_raw, tempfile.TemporaryDirectory() as second_raw:
             first = Path(first_raw)
