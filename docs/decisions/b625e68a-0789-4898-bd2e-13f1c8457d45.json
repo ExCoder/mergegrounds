@@ -1,0 +1,173 @@
+{
+  "decisions": [
+    {
+      "alternatives": [
+        "Lead with the complete feature inventory and architecture before offering a command",
+        "Describe the bootstrap dry run as a repository audit even though it only plans file creation and conflicts"
+      ],
+      "choice": "Lead with the immutable educational demo as the first reproducible value, then describe the bootstrap command only as a dry-run file plan.",
+      "id": "DEC-FIRST-VALUE-BEFORE-INVENTORY",
+      "rationale": "A new maintainer can verify one bounded admission behavior quickly, while exact terminology prevents a conversion path from claiming diagnostics the product does not perform."
+    },
+    {
+      "alternatives": [
+        "Present every included adapter definition as proven end-to-end stack support",
+        "Let installation examples proceed when the referenced immutable release or evidence is absent"
+      ],
+      "choice": "Require an immutable release check before installation and label adapters as reference definitions that still need project-specific end-to-end validation.",
+      "id": "DEC-BOUND-RELEASE-AND-STACK-CLAIMS",
+      "rationale": "Failing closed on an absent release and separating included definitions from proven integrations keeps the public promise reproducible."
+    },
+    {
+      "alternatives": [
+        "Hide the vacant reviewer seats until a contribution is ready to merge"
+      ],
+      "choice": "Disclose the single-maintainer bootstrap and the post-v1.0.0 independent-review gate beside the first-value path.",
+      "id": "DEC-DISCLOSE-GOVERNANCE-CAPACITY",
+      "rationale": "Contributors should know which feedback is useful now and which authoritative changes remain blocked before investing effort."
+    }
+  ],
+  "design_id": "b625e68a-0789-4898-bd2e-13f1c8457d45",
+  "evaluation": {
+    "acceptance_criteria": [
+      {
+        "class": "positive",
+        "failure_behavior": "A missing command, expected result, status boundary, or governance disclosure denies promotion.",
+        "id": "AC-FIRST-VALUE-IS-REPRODUCIBLE",
+        "observable": "Before the feature inventory, the README gives the immutable demo v1.0.1 command, its exact final result, the core v1.0.0 verification stop, the assurance boundary, and the reviewer-capacity boundary.",
+        "oracle": {
+          "evidence_class": "trusted_execution",
+          "kind": "test",
+          "ref": "TEST-README-FIRST-VALUE-CONTRACT"
+        }
+      },
+      {
+        "class": "negative",
+        "failure_behavior": "Any unsupported audit, safety, release, adapter, or governance claim denies promotion.",
+        "id": "AC-UNPROVEN-CLAIMS-ARE-REJECTED",
+        "observable": "The README never presents the bootstrap preview as a repository audit, an absent release as available, reference adapter definitions as proven integrations, or repository controls as Maximum Assurance.",
+        "oracle": {
+          "evidence_class": "trusted_execution",
+          "kind": "test",
+          "ref": "TEST-README-CLAIM-NEGATIVE"
+        }
+      },
+      {
+        "class": "adversarial",
+        "failure_behavior": "Any unresolved mismatch or absent independent challenge denies promotion.",
+        "id": "AC-PUBLIC-PATH-WITHSTANDS-CHALLENGE",
+        "observable": "An independent reviewer reproduces the demo from its immutable tag, checks every first-screen claim against source and release state, and finds no mutable, fictional, or over-broad promise.",
+        "oracle": {
+          "evidence_class": "independent_human",
+          "kind": "external_review",
+          "ref": "REVIEW-PUBLIC-FIRST-VALUE-ADVERSARIAL"
+        }
+      },
+      {
+        "class": "recovery",
+        "failure_behavior": "A stale or false first-value path remains unpublished until a corrected governed change passes the same contract.",
+        "id": "AC-STALE-PUBLIC-PATH-RECOVERS",
+        "observable": "If a tag, command, output, assurance boundary, or reviewer state stops matching reality, promotion remains blocked and the last verified public instructions stay authoritative.",
+        "oracle": {
+          "evidence_class": "trusted_execution",
+          "kind": "test",
+          "ref": "TEST-README-RECOVERY-BOUNDARY"
+        }
+      }
+    ],
+    "outcome_metrics": [
+      {
+        "baseline_window": "24h",
+        "direction": "not_regress",
+        "evidence_class": "external_verifier",
+        "failure_action": "deny_promotion",
+        "id": "METRIC-PUBLIC-CLAIM-REPRODUCTION",
+        "maximum_missing_percent": 0,
+        "minimum_samples": 20,
+        "observable": "Percentage of sampled first-value commands, outputs, release identities, limitations, and governance claims reproduced from immutable public state and reviewed source.",
+        "observation_window": "24h",
+        "promotion_blocking": true,
+        "source": "Independent prelaunch review of at least twenty exact README assertions against tagged demo output, core release state, repository source, and governance records",
+        "target": 100,
+        "unit": "percent"
+      }
+    ]
+  },
+  "failure_modes": [
+    {
+      "condition": "The first command references a mutable or absent artifact, or its displayed result differs from execution.",
+      "detection_ref": "TEST-README-CLAIM-NEGATIVE",
+      "expected_behavior": "The mismatch is reported, installation remains blocked, and no substitute prose is treated as evidence.",
+      "id": "FM-FIRST-VALUE-DRIFT",
+      "rollback_trigger": "Any immutable-reference, command-output, or release-state mismatch triggers removal or correction before promotion."
+    },
+    {
+      "condition": "Public copy expands a bootstrap preview, adapter definition, or portable control into a stronger product or assurance claim.",
+      "detection_ref": "REVIEW-PUBLIC-FIRST-VALUE-ADVERSARIAL",
+      "expected_behavior": "The claim is narrowed to the behavior that can be reproduced and the launch remains gated.",
+      "id": "FM-PUBLIC-CLAIM-OVERREACH",
+      "rollback_trigger": "Any fictional audit behavior, blanket stack support, safe-code promise, or hidden governance dependency blocks promotion."
+    }
+  ],
+  "goals": [
+    "Let a new maintainer reproduce one bounded MergeGrounds behavior in about ninety seconds before reading the full architecture",
+    "Make the core release, adapter maturity, assurance boundary, and reviewer capacity explicit before installation or contribution"
+  ],
+  "invariants": [
+    {
+      "id": "INV-NO-FICTIONAL-FIRST-ACTION",
+      "statement": "Every command and result in the first-value path matches a real versioned executable path; bootstrap preview is never described as a repository audit.",
+      "verification_ref": "AC-UNPROVEN-CLAIMS-ARE-REJECTED"
+    },
+    {
+      "id": "INV-PUBLIC-CLAIMS-STAY-BOUNDED",
+      "statement": "The README distinguishes an educational demo, Portable controls, reference adapter definitions, and externally administered Maximum Assurance.",
+      "verification_ref": "AC-PUBLIC-PATH-WITHSTANDS-CHALLENGE"
+    }
+  ],
+  "non_goals": [
+    "Implementing a new repository-audit command or claiming that bootstrap performs one",
+    "Publishing v1.0.0, changing GitHub account settings, or weakening any admission or governance gate",
+    "Claiming end-to-end support for a stack without a public fixture on the current immutable release"
+  ],
+  "observability": {
+    "signals": [
+      {
+        "decision_use": "Deny promotion when any required first-screen element is missing or appears after the feature inventory.",
+        "id": "SIG-FIRST-VALUE-CONTRACT",
+        "name": "README first-value contract result"
+      },
+      {
+        "decision_use": "Deny promotion when an immutable demo command, expected output, release status, adapter boundary, or governance claim cannot be independently reproduced.",
+        "id": "SIG-PUBLIC-CLAIM-REPRODUCTION",
+        "name": "Independently reproduced public claims"
+      }
+    ]
+  },
+  "problem": "A prospective adopter currently reaches a long capability inventory before a reproducible first action, while launch copy elsewhere has confused the dry-run bootstrap file plan with a repository audit and overstated stack readiness. This creates avoidable activation friction and risks earning trust with claims the executable product does not support.",
+  "rollback": {
+    "strategy": "Keep the candidate unpublished and retain the last verified README until the immutable command, expected output, status, and boundary claims are corrected through the governed path.",
+    "triggers": [
+      "The demo tag or final output differs from the documented first-value path",
+      "The core release is described as installable before its immutable evidence exists",
+      "An adapter, assurance, or reviewer-capacity statement exceeds independently verified state"
+    ],
+    "verification_ref": "AC-STALE-PUBLIC-PATH-RECOVERS"
+  },
+  "schema_version": 1,
+  "title": "Lead public adoption with reproducible first value",
+  "trust_boundaries": [
+    {
+      "controls": [
+        "Immutable version references and exact expected output",
+        "Executable contract tests for first-screen structure and negative claim language",
+        "Independent reproduction against public release and governance state",
+        "Fail-closed installation wording when release evidence is absent"
+      ],
+      "data": "Commands, expected output, release status, assurance limitations, adapter maturity, and reviewer capacity presented to prospective adopters",
+      "id": "TB-REPOSITORY-CLAIMS-TO-ADOPTER",
+      "source": "Maintainer-authored public README and repository state",
+      "target": "Prospective maintainer installation and contribution decision"
+    }
+  ]
+}
