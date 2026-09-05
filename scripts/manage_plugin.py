@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import shutil
 import subprocess
 import sys
@@ -18,6 +19,7 @@ MARKETPLACE = "mergegrounds"
 SELECTOR = f"{PLUGIN}@{MARKETPLACE}"
 DEFAULT_SOURCE = "https://github.com/ExCoder/mergegrounds"
 DEFAULT_REF = "v1.0.0"
+IMMUTABLE_REF = re.compile(r"(?:v[0-9]+\.[0-9]+\.[0-9]+|[0-9a-f]{40}|[0-9a-f]{64})\Z")
 
 
 class PluginManagerError(RuntimeError):
@@ -36,6 +38,25 @@ def validate_source(source: str) -> None:
         marketplace = json.loads(catalog.read_text(encoding="utf-8"))
         if plugin.get("name") != PLUGIN or marketplace.get("name") != MARKETPLACE:
             raise PluginManagerError("local plugin or marketplace identity does not match")
+
+
+def local_source(source: str) -> Path | None:
+    """Return the resolved local source, or ``None`` for a Git marketplace source."""
+    candidate = Path(source).expanduser()
+    return candidate.resolve(strict=True) if candidate.exists() else None
+
+
+def validate_binding(source: str, reference: str | None, operation: str) -> None:
+    """Reject ambiguous or mutable lifecycle source bindings before mutation."""
+    validate_source(source)
+    if local_source(source) is not None:
+        if reference is not None:
+            raise PluginManagerError("local source does not accept --ref")
+        return
+    if reference is None:
+        raise PluginManagerError(f"Git {operation} requires an explicit immutable --ref")
+    if IMMUTABLE_REF.fullmatch(reference) is None:
+        raise PluginManagerError("--ref must be an immutable release tag or commit")
 
 
 def command(arguments: list[str], dry_run: bool) -> dict[str, Any] | None:
@@ -64,7 +85,7 @@ def command(arguments: list[str], dry_run: bool) -> dict[str, Any] | None:
 
 
 def install(source: str, reference: str | None, dry_run: bool) -> None:
-    validate_source(source)
+    validate_binding(source, reference, "install")
     arguments = ["codex", "plugin", "marketplace", "add", source]
     if reference:
         arguments.extend(["--ref", reference])
@@ -73,9 +94,15 @@ def install(source: str, reference: str | None, dry_run: bool) -> None:
     command(["codex", "plugin", "add", SELECTOR, "--json"], dry_run)
 
 
-def update(dry_run: bool) -> None:
-    command(["codex", "plugin", "marketplace", "upgrade", MARKETPLACE, "--json"], dry_run)
+def update(source: str, reference: str | None, dry_run: bool) -> None:
+    validate_binding(source, reference, "update")
     command(["codex", "plugin", "remove", SELECTOR, "--json"], dry_run)
+    command(["codex", "plugin", "marketplace", "remove", MARKETPLACE, "--json"], dry_run)
+    arguments = ["codex", "plugin", "marketplace", "add", source]
+    if reference is not None:
+        arguments.extend(["--ref", reference])
+    arguments.append("--json")
+    command(arguments, dry_run)
     command(["codex", "plugin", "add", SELECTOR, "--json"], dry_run)
 
 
@@ -112,7 +139,16 @@ def main() -> int:
         "--ref",
         help=f"immutable Git tag or commit (default for a Git source: {DEFAULT_REF})",
     )
-    subparsers.add_parser("update")
+    update_parser = subparsers.add_parser("update")
+    update_parser.add_argument(
+        "--source",
+        default=DEFAULT_SOURCE,
+        help=f"local checkout or Git marketplace source (default: {DEFAULT_SOURCE})",
+    )
+    update_parser.add_argument(
+        "--ref",
+        help="required immutable release tag or commit for a Git source; omit for a local source",
+    )
     uninstall_parser = subparsers.add_parser("uninstall")
     uninstall_parser.add_argument("--keep-marketplace", action="store_true")
     subparsers.add_parser("status")
@@ -123,11 +159,11 @@ def main() -> int:
     try:
         if arguments.operation == "install":
             reference = arguments.ref
-            if reference is None and not Path(arguments.source).expanduser().exists():
+            if reference is None and local_source(arguments.source) is None:
                 reference = DEFAULT_REF
             install(arguments.source, reference, arguments.dry_run)
         elif arguments.operation == "update":
-            update(arguments.dry_run)
+            update(arguments.source, arguments.ref, arguments.dry_run)
         elif arguments.operation == "uninstall":
             uninstall(not arguments.keep_marketplace, arguments.dry_run)
         else:

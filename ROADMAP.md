@@ -10,8 +10,9 @@ intentions, not promises; each item still needs a reviewed design and evidence.
 - Publish reproducible archives, checksums, release notes, and a documented
   install/update/uninstall path.
 - Add runnable red/green example repositories for Python and TypeScript.
-- Complete repository rules, private vulnerability reporting, Discussions, and
-  community profile settings on the public GitHub repository.
+- At public launch, enable and verify repository rules, private vulnerability
+  reporting, Discussions, immutable releases, and community profile settings;
+  repository files alone do not prove these external controls are active.
 
 ## Next: independent admission
 

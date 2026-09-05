@@ -174,8 +174,21 @@ judge.
 
 The plugin manifest is at `.codex-plugin/plugin.json`; the skill entry point is [SKILL.md](skills/mergegrounds/SKILL.md). Install or retain the complete plugin repository: the skill deliberately depends on the sibling runner, scaffolder, policy schemas, workflows, and assurance documentation. Copying only `skills/mergegrounds/` is not a supported standalone installation.
 
-To install the immutable public `v1.0.0` tag, preview and run the lifecycle
-helper, then start a new Codex task so discovery uses the installed copy:
+A fresh user does not yet have this repository's helper. Install the reviewed
+public `v1.0.0` ref directly with the Codex CLI, then start a new Codex task so
+discovery uses the installed copy:
+
+```bash
+codex plugin marketplace add ExCoder/mergegrounds --ref v1.0.0 --json
+codex plugin add mergegrounds@mergegrounds --json
+```
+
+The source/ref becomes usable only after the coordinated public launch. Verify
+the candidate provenance using [releasing.md](docs/releasing.md); a version-like
+tag or checksum alone is not an independent signature.
+
+After obtaining and reviewing a checkout, its lifecycle helper can preview the
+same operation:
 
 ```bash
 python3 -I scripts/manage_plugin.py --dry-run install
@@ -184,7 +197,7 @@ python3 -I scripts/manage_plugin.py install
 
 For a reviewed local checkout instead, add `--source .` to both commands.
 
-The helper uses the same Codex CLI lifecycle commands shown in [installation.md](docs/installation.md), including immutable Git-tag installation, update, status, and uninstall. The marketplace intentionally points at `./`, because this repository root is both the complete starter and the plugin root. Inspect `.agents/plugins/marketplace.json`, `.codex-plugin/plugin.json`, and the helper's dry-run before installation. Keep automatic discovery enabled so hardening and audit requests can route to the skill; it still requires explicit authorization before changing external GitHub settings.
+The helper uses the same Codex CLI lifecycle commands shown in [installation.md](docs/installation.md), including explicit Git-ref update, local-checkout refresh, status, and uninstall. The marketplace intentionally points at `./`, because this repository root is both the complete starter and the plugin root. Inspect `.agents/plugins/marketplace.json`, `.codex-plugin/plugin.json`, and the helper's dry-run before installation. Keep automatic discovery enabled so hardening and audit requests can route to the skill; it still requires explicit authorization before changing external GitHub settings.
 
 ## Verify this source repository
 
@@ -208,11 +221,26 @@ harness.
 ## Releases and community
 
 `VERSION`, the plugin manifest, changelog, Git tag, and release archive must agree.
-The release workflow runs policy and unit validation, builds deterministic `.tar.gz`
-and `.zip` archives twice, compares them, and retains `SHA256SUMS` plus a
-digest-bound manifest. Checksums are integrity metadata, not an independent
-signature; verify signed tags/provenance when the public release policy provides
-them.
+The tag-only release workflow first rejects any target commit that GitHub does
+not verify under the documented public maintainer identity. It then binds an
+annotated version tag to its peeled default-branch commit, requires a clean
+source tree, runs policy and unit validation, builds deterministic `.tar.gz`
+and `.zip` archives twice, and retains the exact candidate. A separate
+no-checkout job validates those inert bytes and creates GitHub/Sigstore
+build-provenance attestations. It never
+auto-publishes a Release; maintainers must verify and promote the retained bytes
+using [the release runbook](docs/releasing.md).
+
+The founding `v1.0.0` tag is annotated but unsigned; its target commit is
+GitHub-verified. Checksums are integrity
+metadata, not an independent signature, and `--verify-tag` checks existence
+rather than a cryptographic tag signature. See the runbook for the exact
+source-ref/source-digest constraints and the immutable GitHub Release boundary.
+
+The project starts with one accountable maintainer. That bootstrap state is
+disclosed in [GOVERNANCE.md](GOVERNANCE.md) and does not satisfy the independent
+human review required for maximum-assurance production use or future R4 release
+changes.
 
 Use [SUPPORT.md](SUPPORT.md) for support routing, [GOVERNANCE.md](GOVERNANCE.md)
 for decision rights, [ROADMAP.md](ROADMAP.md) for direction, and

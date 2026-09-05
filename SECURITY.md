@@ -6,7 +6,18 @@ Security fixes are made on the repository's current default branch and the lates
 
 ## Report privately
 
-Do not open a public issue, pull request, discussion, or CI log for a suspected vulnerability. Use **Security → Advisories → Report a vulnerability** in this repository. If private vulnerability reporting is unavailable, use the organization's pre-established private security channel and provide only enough non-sensitive detail to establish contact.
+Do not open a public issue, pull request, discussion, or CI log for a suspected
+vulnerability. The canonical private route is
+<https://github.com/ExCoder/mergegrounds/security/advisories/new>, exposed in the
+repository UI as **Security → Advisories → Report a vulnerability** after the
+owner enables GitHub private vulnerability reporting (PVR).
+
+PVR is an external repository setting: the presence of this file does not prove
+that it is enabled. Confirm that the private reporting form opens before sending
+details. If it is unavailable, this project currently advertises no alternate
+general-purpose private security inbox. Do not disclose the vulnerability
+publicly; retry after PVR activation or use only a private channel that you and
+the maintainer had already established independently.
 
 Include, when safe:
 
@@ -20,7 +31,12 @@ Never include live credentials, customer data, production payloads, proprietary 
 
 ## Response targets
 
-The security team aims to acknowledge a complete report within two business days, provide an initial severity assessment within five business days, and send an update at least every seven days while remediation is active. Targets may change for incomplete, duplicate, or coordinated multi-party disclosures. Disclosure timing is agreed with the reporter after affected users have a practical mitigation.
+The maintainer aims to acknowledge a complete report within two business days,
+provide an initial severity assessment within five business days, and send an
+update at least every seven days while remediation is active. These are targets,
+not a staffed-team SLA, and may change for incomplete, duplicate, or coordinated
+multi-party disclosures. Disclosure timing is agreed with the reporter after
+affected users have a practical mitigation.
 
 ## Security acceptance policy
 
@@ -34,4 +50,8 @@ The security team aims to acknowledge a complete report within two business days
 
 ## Safe harbor
 
-Good-faith research that respects privacy, avoids persistence and data destruction, uses the minimum access needed, and reports promptly through the private channel will be handled constructively. Do not degrade availability, access data belonging to others, use social engineering, or retain data beyond what is needed to report the issue.
+Good-faith research that respects privacy, avoids persistence and data
+destruction, uses the minimum access needed, and reports promptly through the
+documented private route will be handled constructively. Do not degrade
+availability, access data belonging to others, use social engineering, or retain
+data beyond what is needed to report the issue.

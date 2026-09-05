@@ -95,7 +95,36 @@ Keep these invariants when adapting workflows:
 - Keep publishing, signing, deployment, and PR-commenting in a later trusted workflow that downloads only subject-verified artifacts and never executes them.
 - Keep `persist-credentials: false`, explicit job permissions, timeouts, and `cancel-in-progress: false` for admission/full attempts so an older denial is not silently erased. The external ledger must also record platform-level cancellation.
 
-MergeGrounds binds the complete shipped `mergegrounds.yml`, `full-scan.yml`, and `codeql.yml` bytes to `TRUSTED_ADMISSION_WORKFLOW_SHA256` in the sealed `scripts/mergegrounds.py`. This binding protects the reviewed final-enforcer topology, CodeQL detector/matrix producer, raw-to-validation SARIF handoff, bounded zero-finding parser, subject manifest, and the narrow typed output/`continue-on-error` plumbing as one unit. A legitimate workflow edit—including an action-SHA bump or language-matrix change—must update the corresponding digest only after reviewing the complete workflow diff, then commit the controls, regenerate the control-plane seal, and commit the seal separately through the R4 control path. An unexplained `WORKFLOW_TOPOLOGY` finding must never be bypassed or silenced by loosening the scanner.
+MergeGrounds binds the complete shipped `mergegrounds.yml`, `full-scan.yml`,
+`codeql.yml`, and `release.yml` bytes to
+`TRUSTED_ADMISSION_WORKFLOW_SHA256` in the sealed `scripts/mergegrounds.py`.
+This binding protects the reviewed final-enforcer topology, CodeQL
+detector/matrix producer, raw-to-validation SARIF handoff, bounded zero-finding
+parser, subject manifest, release tag/version/default-branch binding,
+deterministic double build, inert candidate handoff, and narrow typed
+output/`continue-on-error` plumbing as one unit. Only the exact reviewed release
+workflow may receive `id-token: write`, `attestations: write`, and
+`artifact-metadata: write`, and only in its no-checkout attestation job; any byte
+change removes that permission exception
+and raises `WORKFLOW_TOPOLOGY`. A legitimate workflow edit—including an action-
+SHA bump or language-matrix change—must update the corresponding digest only
+after reviewing the complete workflow diff, then commit the controls, regenerate
+the control-plane seal, and commit the seal separately through the R4 control
+path. An unexplained `WORKFLOW_TOPOLOGY` finding must never be bypassed or
+silenced by loosening the scanner.
+
+The release workflow activates only for semantic version tags. A no-checkout,
+read-only identity job first requires the exact public maintainer identity and a
+GitHub-verified commit signature. The build then requires an annotated tag
+peeled to the event SHA, fetches the repository-reported default branch, proves
+the release commit is its ancestor, and builds with read-only permissions. It
+uploads a candidate artifact but does not create a GitHub
+Release. Promotion follows `docs/releasing.md` and verifies the exact source ref,
+source digest, signer workflow, subject digests, and GitHub/Sigstore provenance
+before the already-built bytes are uploaded. This separation does not replace
+protected default-branch governance: the workflow itself lives in the source
+repository and is trusted only through its exact digest plus external branch
+protections.
 
 Candidate-selectable pull-request, push, merge-queue, and manual-dispatch workflows receive no write permission or repository secrets. CodeQL runs with `upload: never`; `tools: linked` pins the CodeQL CLI 2.26.4 selection from the immutable Action revision and excludes feature-flag/default-version drift. The Action may still reuse an exact-version Actions toolcache entry, so neither `linked` nor the SARIF semantic version attests the executed CLI bytes. Each matrix producer may transfer exactly one post-processed `upload.sarif` artifact into a separate no-checkout validation job. That job enforces regular-file, type, size, JSON/SARIF shape, the linked CLI version's exact output schema/tool/format contract, a non-empty unique rule inventory combined across the driver and query-pack extensions, language category, zero findings, and subject-manifest boundaries before retaining a diagnostic artifact. An optional exported-diagnostics invocation must be the sole invocation, explicitly successful, free of process-failure markers, and contain only descriptor-linked, bounded `none`/`note` configuration or execution notifications. The one expected `codeql-action/overlay-disabled` telemetry record is accepted only with its exact driver descriptor, empty telemetry message, `none` level, visibility, timestamp, and finite pinned-reason contract; a missing success bit, unlinked/ambiguous descriptor, warning, error, exception, nonzero exit, or malformed/multiple invocation fails closed. Pull-request file-coverage collection is explicitly enabled, but neither that metadata nor the bounded parser proves complete source scope.
 

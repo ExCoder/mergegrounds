@@ -71,6 +71,48 @@ class PublicReleaseTests(unittest.TestCase):
                 self.assertTrue(path.is_file())
                 self.assertGreater(path.stat().st_size, 32)
 
+    def test_release_workflow_is_tag_bound_and_attests_without_publishing(self) -> None:
+        workflow = (ROOT / ".github/workflows/release.yml").read_text(encoding="utf-8")
+        self.assertNotIn("workflow_dispatch", workflow)
+        self.assertIn('python-version: "3.13.15"', workflow)
+        self.assertIn(
+            "actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0",
+            workflow,
+        )
+        self.assertIn("verification.verified", workflow)
+        self.assertIn("3510267+ExCoder@users.noreply.github.com", workflow)
+        self.assertIn("needs: identity", workflow)
+        self.assertIn("git cat-file -t \"refs/tags/$RELEASE_REF\"", workflow)
+        self.assertIn('git merge-base --is-ancestor "$RELEASE_SHA"', workflow)
+        self.assertIn("refs/remotes/origin/$DEFAULT_BRANCH", workflow)
+        self.assertIn("git status --porcelain=v1 --untracked-files=all", workflow)
+        self.assertIn("attestations: write", workflow)
+        self.assertIn("artifact-metadata: write", workflow)
+        self.assertIn("id-token: write", workflow)
+        self.assertIn(
+            "actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2",
+            workflow,
+        )
+        self.assertIn("release-dist/mergegrounds-*.tar.gz", workflow)
+        self.assertIn("release-dist/mergegrounds-*.zip", workflow)
+        self.assertNotIn("gh release create", workflow)
+        self.assertNotIn("contents: write", workflow)
+
+    def test_release_runbook_pins_provenance_identity_and_documents_unsigned_tag(self) -> None:
+        runbook = (ROOT / "docs/releasing.md").read_text(encoding="utf-8")
+        for expected in (
+            "--signer-workflow ExCoder/mergegrounds/.github/workflows/release.yml",
+            '--source-ref "refs/tags/$tag"',
+            '--source-digest "$release_sha"',
+            "--deny-self-hosted-runners",
+            'gh release create "$tag"',
+            'gh release verify "$tag"',
+            ".commit.verification.verified == true",
+            "unsigned annotated Git tag",
+            "does not publish a GitHub Release",
+        ):
+            self.assertIn(expected, runbook)
+
 
 if __name__ == "__main__":
     unittest.main()

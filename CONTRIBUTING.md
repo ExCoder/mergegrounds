@@ -2,6 +2,12 @@
 
 MergeGrounds is itself control-plane code. Every change is R4: it can affect which future code is admitted.
 
+The founding `v1.0.0` release is explicitly documented as a single-maintainer
+bootstrap in [GOVERNANCE.md](GOVERNANCE.md). After that baseline, contributions
+may be opened and tested, but no R4 change or release can become authoritative
+while the independent human security and platform reviewer seats are vacant.
+Neither AI review nor a second review by the author satisfies that gate.
+
 ## Required process
 
 1. Land and approve the design record before substantive implementation. Bind the implementation change to that exact base-resident design digest.
@@ -17,7 +23,8 @@ MergeGrounds is itself control-plane code. Every change is R4: it can affect whi
 6. Validate the skill and plugin with the bundled Codex validators.
 7. Run shell/YAML/workflow validation and audit every external action/container reference.
 8. Obtain an adversarial challenge from a reviewer who did not author or operate the change, then complete human explain-back on the final diff. AI review is advisory and never fills a required human seat.
-9. Obtain independent security and platform approval of the final diff.
+9. Obtain approval of the final diff from two non-author humans: one documented
+   independent security reviewer and one separately independent platform reviewer.
 10. Update `.mergegrounds/control-plane.lock.json` only after the final control files are reviewed.
 
 Never make a gate advisory, lower a threshold, broaden an exclusion, convert an error into success, or add an exception solely to merge a change. Missing tools, unsupported formats, timeouts, zero tests/mutants, malformed reports, and stale artifacts remain non-pass states.

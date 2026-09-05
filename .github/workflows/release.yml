@@ -1,10 +1,9 @@
-name: Release Artifacts
+name: Release Candidate
 
 on:
   push:
     tags:
       - "v[0-9]+.[0-9]+.[0-9]+"
-  workflow_dispatch:
 
 permissions:
   contents: read
@@ -14,20 +13,53 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  identity:
+    name: Release / Verify signed source identity
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - name: Require the GitHub-verified public maintainer identity
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        with:
+          script: |
+            const { data: commit } = await github.rest.repos.getCommit({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              ref: context.sha,
+            });
+            const verification = commit.commit.verification ?? {};
+            const author = commit.commit.author ?? {};
+            if (verification.verified !== true || verification.reason !== "valid") {
+              core.setFailed(
+                `Release commit is not GitHub-verified: ${verification.reason ?? "unknown"}`,
+              );
+            }
+            if (
+              commit.author?.login !== "ExCoder" ||
+              author.name !== "ExCoder" ||
+              author.email !== "3510267+ExCoder@users.noreply.github.com"
+            ) {
+              core.setFailed("Release commit does not use the required public ExCoder identity");
+            }
+
   build:
-    name: Release / Verify and build
+    name: Release / Verify and build candidate
+    needs: identity
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     permissions:
       contents: read
     steps:
-      - name: Checkout complete tagged revision without persisted credentials
+      - name: Checkout the complete tagged revision without persisted credentials
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          ref: ${{ github.ref }}
           persist-credentials: false
           fetch-depth: 0
           show-progress: false
-      - name: Install pinned Python runtime
+      - name: Install the exact reviewed Python runtime
         uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: "3.13.15"
@@ -37,41 +69,142 @@ jobs:
         run: |
           set -euo pipefail
           python3 -m pip install --disable-pip-version-check --require-hashes -r requirements-self.lock
-      - name: Verify version identity and repository policy
+      - name: Bind the tag, version, commit, and protected default branch
         shell: bash
         env:
-          RELEASE_REF: ${{ github.ref_name }}
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
           RELEASE_EVENT: ${{ github.event_name }}
+          RELEASE_REF: ${{ github.ref_name }}
+          RELEASE_REF_TYPE: ${{ github.ref_type }}
+          RELEASE_SHA: ${{ github.sha }}
         run: |
           set -euo pipefail
+          [[ "$RELEASE_EVENT" == "push" ]]
+          [[ "$RELEASE_REF_TYPE" == "tag" ]]
+          [[ "$RELEASE_SHA" =~ ^[0-9a-f]{40,64}$ ]]
           version="$(tr -d '\n' < VERSION)"
           [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]
-          if [[ "$RELEASE_EVENT" == push ]]; then
-            [[ "$RELEASE_REF" == "v${version}" ]]
-          fi
+          [[ "$RELEASE_REF" == "v${version}" ]]
+          [[ "$(git cat-file -t "refs/tags/$RELEASE_REF")" == "tag" ]]
+          tagged_commit="$(git rev-parse "refs/tags/$RELEASE_REF^{commit}")"
+          [[ "$tagged_commit" == "$RELEASE_SHA" ]]
+          git check-ref-format --branch "$DEFAULT_BRANCH"
+          git fetch --force --no-tags origin \
+            "refs/heads/${DEFAULT_BRANCH}:refs/remotes/origin/${DEFAULT_BRANCH}"
+          git merge-base --is-ancestor "$RELEASE_SHA" "refs/remotes/origin/$DEFAULT_BRANCH"
+          test -z "$(git status --porcelain=v1 --untracked-files=all)"
           python3 -I scripts/mergegrounds.py verify-repo --strict
           python3 -I scripts/ai_assurance.py validate-policy
-      - name: Run the source unit suite
+      - name: Run the complete source unit suite
         shell: bash
         run: |
           set -euo pipefail
           python3 -I -m unittest discover -s tests -v
-      - name: Build deterministic archives and checksums twice
+      - name: Recheck the source revision before packaging
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -z "$(git status --porcelain=v1 --untracked-files=all)"
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+      - name: Build and compare two deterministic candidates
         shell: bash
         run: |
           set -euo pipefail
           python3 -I scripts/build_release.py --output-dir release-first
           python3 -I scripts/build_release.py --output-dir release-second
           cmp release-first/SHA256SUMS release-second/SHA256SUMS
+          cmp release-first/release-manifest.json release-second/release-manifest.json
           cmp release-first/mergegrounds-*.tar.gz release-second/mergegrounds-*.tar.gz
           cmp release-first/mergegrounds-*.zip release-second/mergegrounds-*.zip
           mv release-first release-dist
-      - name: Retain verified release candidate
+      - name: Retain the exact verified release candidate
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: mergegrounds-release-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
-          path: release-dist/*
+          path: |
+            release-dist/mergegrounds-*.tar.gz
+            release-dist/mergegrounds-*.zip
+            release-dist/release-manifest.json
+            release-dist/SHA256SUMS
           if-no-files-found: error
           include-hidden-files: false
           retention-days: 14
           compression-level: 0
+
+  attest:
+    name: Release / Attest inert candidate bytes
+    needs: build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      actions: read
+      artifact-metadata: write
+      attestations: write
+      contents: read
+      id-token: write
+    steps:
+      - name: Install the exact parser runtime
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.13.15"
+          check-latest: false
+      - name: Download only this attempt's candidate bundle
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: mergegrounds-release-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: release-dist
+      - name: Validate candidate names, types, sizes, and checksums without executing it
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -I - <<'PY'
+          import hashlib
+          import json
+          import re
+          import stat
+          from pathlib import Path
+
+          root = Path("release-dist")
+          entries = list(root.iterdir())
+          if len(entries) != 4:
+              raise SystemExit("candidate bundle must contain exactly four files")
+          for path in entries:
+              mode = path.lstat().st_mode
+              if not stat.S_ISREG(mode) or mode & 0o111 or path.stat().st_size > 32 * 1024 * 1024:
+                  raise SystemExit(f"unsafe candidate entry: {path.name}")
+          manifest_path = root / "release-manifest.json"
+          manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+          version = manifest.get("version")
+          if not isinstance(version, str) or re.fullmatch(r"[0-9]+\.[0-9]+\.[0-9]+", version) is None:
+              raise SystemExit("release manifest has an invalid version")
+          expected = {
+              f"mergegrounds-{version}.tar.gz",
+              f"mergegrounds-{version}.zip",
+              "release-manifest.json",
+              "SHA256SUMS",
+          }
+          if {path.name for path in entries} != expected:
+              raise SystemExit("candidate bundle contains unexpected names")
+          checksum_lines = (root / "SHA256SUMS").read_text(encoding="ascii").splitlines()
+          if len(checksum_lines) != 3:
+              raise SystemExit("checksum manifest must bind exactly three files")
+          observed = {}
+          for line in checksum_lines:
+              match = re.fullmatch(r"([0-9a-f]{64})  ([A-Za-z0-9._-]+)", line)
+              if match is None or match.group(2) in observed:
+                  raise SystemExit("malformed or duplicate checksum record")
+              observed[match.group(2)] = match.group(1)
+          if set(observed) != expected - {"SHA256SUMS"}:
+              raise SystemExit("checksum manifest names do not match candidate")
+          for name, digest in observed.items():
+              if hashlib.sha256((root / name).read_bytes()).hexdigest() != digest:
+                  raise SystemExit(f"checksum mismatch: {name}")
+          PY
+      - name: Attest exact release candidate files
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
+        with:
+          subject-path: |
+            release-dist/mergegrounds-*.tar.gz
+            release-dist/mergegrounds-*.zip
+            release-dist/release-manifest.json
+            release-dist/SHA256SUMS

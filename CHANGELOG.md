@@ -20,5 +20,21 @@
 - Separate the green upstream self-dogfood adapter from deliberately red bootstrap output.
 - Run the complete unittest suite in GitHub Actions and add locked Ruff, strict mypy, branch coverage, critical mutation, security, deterministic build, and parser-fuzz stages for the source repository.
 - Add deterministic release archives, a digest manifest, checksums, lifecycle documentation, community health files, and structured feature/integration intake.
+- Replace checkout-dependent first-install instructions with direct immutable-ref
+  Codex CLI installation, explicit Git-ref update, truthful local refresh,
+  machine-readable status, and complete uninstall/recovery guidance.
+- Bind the release workflow to a GitHub-verified public maintainer commit, an
+  annotated version tag, its peeled commit, a clean tree, and protected
+  default-branch ancestry; compare two builds and issue exact-subject
+  GitHub/Sigstore provenance in a separate no-checkout job without
+  auto-publishing a Release.
+- Document candidate download, checksum/provenance verification, separate
+  immutable-release promotion, and the unsigned annotated `v1.0.0` tag boundary.
+- Disclose the single-maintainer founding-release bootstrap and preserve two
+  independent non-author human reviewers as a hard gate for future R4 releases
+  and maximum-assurance production use.
+- Route conduct abuse through GitHub's official reporting flow and describe PVR
+  as a launch-time external setting instead of claiming nonexistent private
+  project inboxes.
 
 This is a breaking policy release: existing repositories must land the design/change-control bootstrap separately before enforcing the new PR contract.

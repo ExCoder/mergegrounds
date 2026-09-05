@@ -883,6 +883,7 @@ class WorkflowExpressionHardeningTests(unittest.TestCase):
             "mergegrounds.yml": "      - name: Enforce MergeGrounds PR verdict",
             "full-scan.yml": "      - name: Enforce full MergeGrounds verdict",
             "codeql.yml": "  gate:\n",
+            "release.yml": "      - name: Attest exact release candidate files",
         }
         self.workflow.unlink(missing_ok=True)
         for workflow_name, truncation_marker in cases.items():
@@ -901,6 +902,27 @@ class WorkflowExpressionHardeningTests(unittest.TestCase):
                     {finding.code for finding in mergegrounds.workflow_findings(self.root)},
                 )
                 path.unlink()
+
+    def test_only_exact_reviewed_release_workflow_receives_attestation_authority(self) -> None:
+        self.workflow.unlink(missing_ok=True)
+        release = self.workflow.with_name("release.yml")
+        original = (ROOT / ".github/workflows/release.yml").read_text(encoding="utf-8")
+        release.write_text(original, encoding="utf-8")
+        codes = {finding.code for finding in mergegrounds.workflow_findings(self.root)}
+        self.assertNotIn("WRITE_PERMISSION", codes)
+
+        release.write_text(original.replace("attestations: write", "contents: write", 1), encoding="utf-8")
+        changed_codes = {finding.code for finding in mergegrounds.workflow_findings(self.root)}
+        self.assertIn("WORKFLOW_TOPOLOGY", changed_codes)
+        self.assertIn("WRITE_PERMISSION", changed_codes)
+
+        release.write_text(
+            original.replace("artifact-metadata: write", "actions: write", 1),
+            encoding="utf-8",
+        )
+        changed_codes = {finding.code for finding in mergegrounds.workflow_findings(self.root)}
+        self.assertIn("WORKFLOW_TOPOLOGY", changed_codes)
+        self.assertIn("WRITE_PERMISSION", changed_codes)
 
     def test_codeql_analyzer_cannot_continue_on_error(self) -> None:
         self.workflow.unlink(missing_ok=True)

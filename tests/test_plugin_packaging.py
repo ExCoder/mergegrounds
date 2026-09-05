@@ -82,6 +82,56 @@ class PluginPackagingTests(unittest.TestCase):
             self.assertIsNone(manage_plugin.command(["codex", "plugin", "list"], True))
         run.assert_not_called()
 
+    def test_update_rebinds_git_marketplace_to_an_explicit_immutable_ref(self) -> None:
+        with mock.patch.object(manage_plugin, "command") as command:
+            manage_plugin.update(
+                "https://github.com/ExCoder/mergegrounds",
+                "v1.1.0",
+                False,
+            )
+        self.assertEqual(
+            [
+                mock.call(["codex", "plugin", "remove", "mergegrounds@mergegrounds", "--json"], False),
+                mock.call(["codex", "plugin", "marketplace", "remove", "mergegrounds", "--json"], False),
+                mock.call(
+                    [
+                        "codex",
+                        "plugin",
+                        "marketplace",
+                        "add",
+                        "https://github.com/ExCoder/mergegrounds",
+                        "--ref",
+                        "v1.1.0",
+                        "--json",
+                    ],
+                    False,
+                ),
+                mock.call(["codex", "plugin", "add", "mergegrounds@mergegrounds", "--json"], False),
+            ],
+            command.call_args_list,
+        )
+
+    def test_local_update_reinstalls_without_git_marketplace_upgrade(self) -> None:
+        with mock.patch.object(manage_plugin, "command") as command:
+            manage_plugin.update(str(ROOT), None, False)
+        flattened = [call.args[0] for call in command.call_args_list]
+        self.assertNotIn(
+            ["codex", "plugin", "marketplace", "upgrade", "mergegrounds", "--json"],
+            flattened,
+        )
+        self.assertEqual(
+            ["codex", "plugin", "marketplace", "add", str(ROOT), "--json"],
+            flattened[2],
+        )
+
+    def test_git_update_requires_an_explicit_immutable_ref(self) -> None:
+        with self.assertRaisesRegex(manage_plugin.PluginManagerError, "explicit immutable --ref"):
+            manage_plugin.update(manage_plugin.DEFAULT_SOURCE, None, True)
+        with self.assertRaisesRegex(manage_plugin.PluginManagerError, "immutable release tag or commit"):
+            manage_plugin.update(manage_plugin.DEFAULT_SOURCE, "main", True)
+        with self.assertRaisesRegex(manage_plugin.PluginManagerError, "local source does not accept"):
+            manage_plugin.update(str(ROOT), "v1.1.0", True)
+
     def test_public_install_defaults_to_the_immutable_v1_release(self) -> None:
         self.assertEqual("https://github.com/ExCoder/mergegrounds", manage_plugin.DEFAULT_SOURCE)
         self.assertEqual("v1.0.0", manage_plugin.DEFAULT_REF)
@@ -118,6 +168,21 @@ class PluginPackagingTests(unittest.TestCase):
         rendered = "\n".join(str(call.args[0]) for call in output.call_args_list)
         self.assertIn('"plugins": []', rendered)
         self.assertIn('"marketplaces": []', rendered)
+
+    def test_public_docs_lead_with_direct_cli_install_and_cover_status(self) -> None:
+        readme = (ROOT / "README.md").read_text(encoding="utf-8")
+        installation = (ROOT / "docs/installation.md").read_text(encoding="utf-8")
+        direct_marketplace = (
+            "codex plugin marketplace add ExCoder/mergegrounds --ref v1.0.0 --json"
+        )
+        direct_plugin = "codex plugin add mergegrounds@mergegrounds --json"
+        for document in (readme, installation):
+            self.assertIn(direct_marketplace, document)
+            self.assertIn(direct_plugin, document)
+            self.assertLess(document.index(direct_marketplace), document.index("scripts/manage_plugin.py"))
+        self.assertIn("scripts/manage_plugin.py status", installation)
+        self.assertIn("scripts/manage_plugin.py update --ref v1.1.0", installation)
+        self.assertIn("scripts/manage_plugin.py update --source .", installation)
 
 
 if __name__ == "__main__":

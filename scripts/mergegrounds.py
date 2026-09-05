@@ -77,6 +77,7 @@ TRUSTED_ADMISSION_WORKFLOW_SHA256 = {
     ".github/workflows/mergegrounds.yml": "5dd3aeafaf218ef0b4f6f5a97fc7e91a4952299c37595ba4648b1d019c8f0bc2",
     ".github/workflows/full-scan.yml": "bb18b0e0c38e0b57df38d6919a3faae6021ea11ff07d16c80a8d8b2de355cb78",
     ".github/workflows/codeql.yml": "873ae0feb38856ee5670903a95645f5eac100982f28d946437c8c2932763c7be",
+    ".github/workflows/release.yml": "9dc2d0631bfba66e56cb19772c9bedfa41cef1d386e99162d206cb16a57848bc",
 }
 RFC3339_UTC = re.compile(
     r"^[0-9]{4}-[0-9]{2}-[0-9]{2}T"
@@ -190,8 +191,14 @@ MINIMUM_POLICY_MEMBERS = {
         ".github/pull_request_template.md",
         ".github/workflows/*.yml",
         ".github/workflows/*.yaml",
+        "CHANGELOG.md",
+        "CODE_OF_CONDUCT.md",
+        "GOVERNANCE.md",
+        "README.md",
         "mergegrounds-custom",
         "scripts/**",
+        "docs/installation.md",
+        "docs/releasing.md",
         "docs/decisions/README.md",
         "skills/mergegrounds/**/*",
         "SECURITY.md",
@@ -3501,7 +3508,10 @@ def github_expression_risks(expression: str) -> tuple[bool, bool, bool]:
                 pull_request_path = normalized[2:]
                 if dynamic_access or pull_request_path not in safe_pull_request_scalars:
                     pr_data_risk = True
-            elif normalized != ("event", "repository", "private"):
+            elif normalized not in {
+                ("event", "repository", "default_branch"),
+                ("event", "repository", "private"),
+            }:
                 # Issue/comment/review/discussion/call/dispatch payloads and
                 # future event fields are attacker-controlled unless a tiny
                 # typed scalar is explicitly proven safe above.
@@ -3592,7 +3602,7 @@ def workflow_findings(root: Path) -> list[Finding]:
                 Finding(
                     "WORKFLOW_TOPOLOGY",
                     "error",
-                    "the shipped admission workflow differs from its reviewed fail-closed topology",
+                    "the shipped security workflow differs from its reviewed fail-closed topology",
                     rel,
                 )
             )
@@ -3871,15 +3881,24 @@ def workflow_findings(root: Path) -> list[Finding]:
                     continue
                 scope, access = match.groups()
                 if access == "write" and protected_source_event:
-                    code = "PR_WRITE_PERMISSION" if pull_request else "WRITE_PERMISSION"
-                    findings.append(
-                        Finding(
-                            code,
-                            "error",
-                            f"protected-source workflow grants {scope}: write",
-                            rel,
-                        )
+                    reviewed_release_attestation_scope = (
+                        rel == ".github/workflows/release.yml"
+                        and workflow_digest
+                        == TRUSTED_ADMISSION_WORKFLOW_SHA256[
+                            ".github/workflows/release.yml"
+                        ]
+                        and scope in {"artifact-metadata", "attestations", "id-token"}
                     )
+                    if not reviewed_release_attestation_scope:
+                        code = "PR_WRITE_PERMISSION" if pull_request else "WRITE_PERMISSION"
+                        findings.append(
+                            Finding(
+                                code,
+                                "error",
+                                f"protected-source workflow grants {scope}: write",
+                                rel,
+                            )
+                        )
 
         if re.search(r"\bself-hosted\b", code, re.IGNORECASE):
             findings.append(Finding("SELF_HOSTED_PR", "error", "portable baseline forbids self-hosted runners for untrusted code", rel))

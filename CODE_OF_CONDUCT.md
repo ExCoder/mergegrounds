@@ -20,8 +20,15 @@ threads, project events, and private project communication. Maintainers may edit
 hide, reject, lock, or remove contributions and may temporarily or permanently
 restrict participation when behavior threatens people or the project.
 
-Report conduct concerns privately to the maintainer through the repository's
-private contact channel. For a product vulnerability, use the separate process in
-`SECURITY.md`. Reports will be handled with discretion, conflicts of interest will
-be recused where practical, and retaliation against a good-faith reporter is
-prohibited.
+For abuse, spam, threats, doxxing, or other content that violates GitHub policy,
+use GitHub's in-product **Report content** flow described in
+[Reporting abuse or spam](https://docs.github.com/en/communities/maintaining-your-safety-on-github/reporting-abuse-or-spam).
+That report goes to GitHub, not to a private project inbox. The project does not
+currently advertise a confidential conduct mailbox, so do not send sensitive
+conduct details to an invented or unrelated address. Maintainers can moderate
+public project spaces, but cannot promise confidential project-side intake.
+
+For a product vulnerability, use the separate process in `SECURITY.md`; do not
+put exploit details into a conduct report or public issue. Retaliation against a
+good-faith reporter is prohibited, and a maintainer with a conflict must not
+make claims of independent handling.
