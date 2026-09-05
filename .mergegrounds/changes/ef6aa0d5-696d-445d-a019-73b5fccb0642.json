@@ -104,11 +104,11 @@
     "METRIC-PUBLIC-CLAIM-REPRODUCTION"
   ],
   "risk": {
-    "claimed_tier": "R3",
+    "claimed_tier": "R4",
     "impact_flags": [
       "documentation"
     ],
-    "rationale": "The implementation changes public documentation and its executable contract test without altering runtime code, credentials, policy thresholds, or deployment state; inaccurate adoption claims can waste user effort, so the R3 documentation baseline and independent challenge remain required."
+    "rationale": "The implementation changes public documentation and its executable contract test without altering runtime code, credentials, policy thresholds, or deployment state. Because every implementation declaration is itself a critical governed control-plane path, the repository requires R4 independent challenge and human approval even for this documentation-focused change."
   },
   "schema_version": 1,
   "summary": {
