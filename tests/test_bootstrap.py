@@ -6,8 +6,8 @@ import subprocess
 import tempfile
 import sys
 import unittest
+import unittest.mock as mock
 from pathlib import Path
-from unittest import mock
 
 
 ROOT = Path(__file__).resolve().parents[1]

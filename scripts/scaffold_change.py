@@ -286,6 +286,7 @@ def write_repository_file_atomic(root: Path, relative: str, payload: bytes) -> N
                 os.unlink(temporary_name, dir_fd=directory)
                 os.fsync(directory)
             except FileNotFoundError:
+                # The temporary file is already absent, so cleanup is complete.
                 pass
         os.close(directory)
 

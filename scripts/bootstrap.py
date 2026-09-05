@@ -226,6 +226,7 @@ def copy_into_target(source: Path, destination: Path, target: Path, source_in_ta
             try:
                 os.unlink(temporary_name, dir_fd=directory_fd)
             except FileNotFoundError:
+                # A concurrent cleanup may already have removed the unpublished file.
                 pass
         if directory_fd is not None:
             os.close(directory_fd)

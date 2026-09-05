@@ -746,6 +746,7 @@ def _write_decision_output(
             try:
                 os.unlink(temporary_name, dir_fd=directory_fd)
             except OSError:
+                # Cleanup is best-effort and must not mask the decision-write result.
                 pass
         if directory_fd >= 0 and directory_fd != root_fd:
             os.close(directory_fd)
@@ -2873,6 +2874,7 @@ def evaluate_repository(
                     ),
                 )
         except Exception:
+            # Preserve the original fail-closed decision if diagnostic enrichment fails.
             pass
         return decision
     except Exception as exc:  # pragma: no cover - last-resort fail-closed boundary

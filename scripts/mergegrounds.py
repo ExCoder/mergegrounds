@@ -76,7 +76,7 @@ GIT_OBJECT_ID = re.compile(r"^[0-9a-f]{40,64}$")
 TRUSTED_ADMISSION_WORKFLOW_SHA256 = {
     ".github/workflows/mergegrounds.yml": "5dd3aeafaf218ef0b4f6f5a97fc7e91a4952299c37595ba4648b1d019c8f0bc2",
     ".github/workflows/full-scan.yml": "bb18b0e0c38e0b57df38d6919a3faae6021ea11ff07d16c80a8d8b2de355cb78",
-    ".github/workflows/codeql.yml": "873ae0feb38856ee5670903a95645f5eac100982f28d946437c8c2932763c7be",
+    ".github/workflows/codeql.yml": "64e4bc11a1209d51073267d9d9c480e573aa459ecff35246de95ec169ae41b49",
     ".github/workflows/release.yml": "9dc2d0631bfba66e56cb19772c9bedfa41cef1d386e99162d206cb16a57848bc",
 }
 RFC3339_UTC = re.compile(
@@ -1776,13 +1776,14 @@ def run_command(
                 os.killpg(process.pid, signal.SIGKILL)
             else:  # pragma: no cover - exercised on Windows CI
                 process.kill()
-            returncode = process.wait(timeout=10)
+            process.wait(timeout=10)
         if os.name != "nt" and not timed_out:
             try:
                 # A successful shell must not leave background descendants racing
                 # evidence collection or the final source-state check.
                 os.killpg(process.pid, signal.SIGKILL)
             except ProcessLookupError:
+                # The process group exited before the best-effort descendant cleanup.
                 pass
         reader.join(timeout=10)
         if reader.is_alive():
@@ -3187,6 +3188,7 @@ def write_json_atomic(path: Path, payload: dict[str, Any], root: Path) -> None:
             try:
                 os.unlink(temporary_name, dir_fd=directory_fd)
             except FileNotFoundError:
+                # A successful replace can remove the temporary name before fsync fails.
                 pass
             raise
     except OSError as exc:
@@ -5715,8 +5717,6 @@ def raw_result_reason(
                 return "EVIDENCE_RESULTS_INVALID"
             if stage == "toolchain" and adapter not in adapters:
                 return "EVIDENCE_RESULTS_INVALID"
-            if expect_allow:
-                return "EVIDENCE_VERDICT_MISMATCH"
             continue
 
         base_stage = stage

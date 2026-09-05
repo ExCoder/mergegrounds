@@ -9,10 +9,10 @@ import sys
 import tempfile
 import tomllib
 import unittest
+import unittest.mock as mock
 import uuid
 from pathlib import Path
 from typing import Any, Callable
-from unittest import mock
 
 import test_exceptions as exception_fixtures
 from test_ai_policy import RepositoryFixture, ai

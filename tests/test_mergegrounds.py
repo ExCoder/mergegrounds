@@ -11,8 +11,8 @@ import sys
 import tempfile
 import textwrap
 import unittest
+import unittest.mock as mock
 from pathlib import Path
-from unittest import mock
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -382,7 +382,10 @@ class MergeGroundsTests(unittest.TestCase):
             encoding="utf-8",
         )
         codes = {item.code for item in mergegrounds.workflow_findings(self.fixture.root)}
-        self.assertTrue({"PR_WRITE_PERMISSION", "MUTABLE_ACTION", "PR_SECRET", "PR_TOKEN", "WORKFLOW_SYNTAX"} <= codes)
+        self.assertLessEqual(
+            {"PR_WRITE_PERMISSION", "MUTABLE_ACTION", "PR_SECRET", "PR_TOKEN", "WORKFLOW_SYNTAX"},
+            codes,
+        )
 
     def test_pull_request_target_is_rejected_in_mapping_form(self) -> None:
         workflow = self.fixture.root / ".github/workflows/mergegrounds.yml"
@@ -429,7 +432,7 @@ class MergeGroundsTests(unittest.TestCase):
             encoding="utf-8",
         )
         codes = {item.code for item in mergegrounds.workflow_findings(self.fixture.root)}
-        self.assertTrue({"SELF_HOSTED_PR", "SCRIPT_INJECTION"} <= codes)
+        self.assertLessEqual({"SELF_HOSTED_PR", "SCRIPT_INJECTION"}, codes)
 
     def test_codeowners_late_override_is_rejected(self) -> None:
         codeowners = self.fixture.root / ".github/CODEOWNERS"

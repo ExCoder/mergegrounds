@@ -700,7 +700,7 @@ class WorkflowExpressionHardeningTests(unittest.TestCase):
             - run: echo "${{ github.token"
             """
         )
-        self.assertTrue({"WORKFLOW_SYNTAX", "PR_TOKEN"} <= unclosed)
+        self.assertLessEqual({"WORKFLOW_SYNTAX", "PR_TOKEN"}, unclosed)
 
         encoded_delimiters = self.codes_for(
             r'''
@@ -716,7 +716,7 @@ class WorkflowExpressionHardeningTests(unittest.TestCase):
               with: {payload: "${{ github.token }}"}
             """
         )
-        self.assertTrue({"WORKFLOW_SYNTAX", "PR_TOKEN"} <= flow_mapping)
+        self.assertLessEqual({"WORKFLOW_SYNTAX", "PR_TOKEN"}, flow_mapping)
 
         explicit_key = self.codes_for(
             """
@@ -786,7 +786,7 @@ class WorkflowExpressionHardeningTests(unittest.TestCase):
                     encoding="utf-8",
                 )
                 codes = {finding.code for finding in mergegrounds.workflow_findings(self.root)}
-                self.assertTrue(expected_codes <= codes)
+                self.assertLessEqual(expected_codes, codes)
 
         safe_codes = self.codes_for("- run: echo safe")
         self.assertNotIn("CONCURRENCY_INVALID", safe_codes)
@@ -1107,6 +1107,111 @@ class WorkflowExpressionHardeningTests(unittest.TestCase):
         )
         allowed_extension, _, _ = execute(extension_note)
         self.assertEqual(0, allowed_extension.returncode, allowed_extension.stderr)
+
+        extraction_telemetry = json.loads(json.dumps(base_document))
+        extraction_telemetry["runs"][0]["tool"]["driver"]["notifications"].append(
+            {
+                "id": "cli/expected-extracted-files/python",
+                "name": "cli/expected-extracted-files/python",
+                "shortDescription": {"text": "Expected extracted files"},
+                "fullDescription": {
+                    "text": (
+                        "Files appearing in the source archive that are expected "
+                        "to be extracted."
+                    )
+                },
+                "defaultConfiguration": {"enabled": True},
+                "properties": {
+                    "tags": ["expected-extracted-files", "telemetry"],
+                    "languageDisplayName": "Python",
+                },
+            }
+        )
+        extraction_telemetry["runs"][0]["tool"]["extensions"][0][
+            "notifications"
+        ] = [
+            {
+                "id": "py/diagnostics/successfully-extracted-files",
+                "name": "py/diagnostics/successfully-extracted-files",
+                "shortDescription": {"text": "Extracted Python files"},
+                "fullDescription": {
+                    "text": (
+                        "Lists all Python files in the source code directory that "
+                        "were extracted."
+                    )
+                },
+                "defaultConfiguration": {"enabled": True},
+                "properties": {
+                    "tags": ["successfully-extracted-files"],
+                    "description": (
+                        "Lists all Python files in the source code directory that "
+                        "were extracted."
+                    ),
+                    "id": "py/diagnostics/successfully-extracted-files",
+                    "kind": "diagnostic",
+                    "name": "Extracted Python files",
+                },
+            }
+        ]
+        extraction_telemetry["runs"][0]["invocations"][0][
+            "toolExecutionNotifications"
+        ].append(
+            {
+                "descriptor": {
+                    "id": "cli/expected-extracted-files/python",
+                    "index": 1,
+                },
+                "level": "none",
+                "locations": [
+                    {
+                        "physicalLocation": {
+                            "artifactLocation": {
+                                "uri": "scripts/mergegrounds.py",
+                                "uriBaseId": "%SRCROOT%",
+                                "index": 0,
+                            }
+                        }
+                    }
+                ],
+                "message": {"text": ""},
+                "properties": {"formattedMessage": {"text": ""}},
+            }
+        )
+        extraction_telemetry["runs"][0]["invocations"][0][
+            "toolExecutionNotifications"
+        ].append(
+            {
+                "descriptor": {
+                    "id": "py/diagnostics/successfully-extracted-files",
+                    "index": 0,
+                    "toolComponent": {"index": 0},
+                },
+                "level": "none",
+                "locations": [
+                    {
+                        "physicalLocation": {
+                            "artifactLocation": {
+                                "uri": "tests/test_workflow_hardening.py",
+                                "uriBaseId": "%SRCROOT%",
+                                "index": 1,
+                            }
+                        }
+                    }
+                ],
+                "message": {"text": ""},
+                "properties": {"formattedMessage": {"text": ""}},
+            }
+        )
+        allowed_extraction, _, _ = execute(extraction_telemetry)
+        self.assertEqual(0, allowed_extraction.returncode, allowed_extraction.stderr)
+
+        malformed_extraction = json.loads(json.dumps(extraction_telemetry))
+        malformed_extraction["runs"][0]["invocations"][0][
+            "toolExecutionNotifications"
+        ][1]["properties"]["formattedMessage"]["text"] = "candidate controlled"
+        denied_extraction, _, _ = execute(malformed_extraction)
+        self.assertNotEqual(0, denied_extraction.returncode)
+        self.assertIn("extraction telemetry", denied_extraction.stderr)
 
         named_component = json.loads(json.dumps(extension_note))
         named_component["runs"][0]["invocations"][0][

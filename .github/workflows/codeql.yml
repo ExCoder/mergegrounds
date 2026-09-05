@@ -444,10 +444,12 @@ jobs:
               # The linked CLI emits an invocation when diagnostics are
               # exported. Absence is valid for a run with no exported
               # diagnostics. The extended suites intentionally disable overlay
-              # analysis and can emit one telemetry-only diagnostic whose exact
-              # CodeQL 2.26.4 shape is allowlisted below. Everything else must
-              # be a linked, bounded none/note notification; warnings, errors,
-              # exceptions, and process-failure markers fail closed.
+              # analysis and can emit telemetry-only diagnostics whose exact or
+              # relational CodeQL 2.26.4 shapes are allowlisted below. This
+              # includes file-extraction inventory records: they are recorded
+              # but never treated as analysis results or scope proof. Everything
+              # else must be a linked, bounded none/note notification; warnings,
+              # errors, exceptions, and process-failure markers fail closed.
               invocations = run.get("invocations")
               if invocations is not None:
                   if not isinstance(invocations, list) or len(invocations) != 1:
@@ -563,6 +565,181 @@ jobs:
                               ):
                                   raise SystemExit(
                                       "CodeQL overlay telemetry does not match the pinned allowlist"
+                                  )
+                          elif (
+                              descriptor_id.startswith("cli/expected-extracted-files/")
+                              or descriptor_id.endswith(
+                                  "/diagnostics/successfully-extracted-files"
+                              )
+                          ):
+                              descriptor = components[component_index][1]["notifications"][
+                                  descriptor_index
+                              ]
+                              locations = notification.get("locations")
+                              location = (
+                                  locations[0]
+                                  if isinstance(locations, list) and len(locations) == 1
+                                  else None
+                              )
+                              physical = (
+                                  location.get("physicalLocation")
+                                  if isinstance(location, dict)
+                                  else None
+                              )
+                              artifact = (
+                                  physical.get("artifactLocation")
+                                  if isinstance(physical, dict)
+                                  else None
+                              )
+                              uri = artifact.get("uri") if isinstance(artifact, dict) else None
+                              artifact_index = (
+                                  artifact.get("index")
+                                  if isinstance(artifact, dict)
+                                  else None
+                              )
+                              descriptor_properties = descriptor.get("properties")
+                              short_description = descriptor.get("shortDescription")
+                              full_description = descriptor.get("fullDescription")
+                              expected_reference = {
+                                  "id": descriptor_id,
+                                  "index": descriptor_index,
+                              }
+                              successfully_extracted = descriptor_id.endswith(
+                                  "/diagnostics/successfully-extracted-files"
+                              )
+                              if successfully_extracted:
+                                  expected_reference["toolComponent"] = {
+                                      "index": component_index - 1
+                                  }
+                              family = (
+                                  descriptor_id.removeprefix(
+                                      "cli/expected-extracted-files/"
+                                  )
+                                  if not successfully_extracted
+                                  else descriptor_id.removesuffix(
+                                      "/diagnostics/successfully-extracted-files"
+                                  )
+                              )
+                              family_is_bounded = (
+                                  bool(family)
+                                  and len(family.encode("utf-8")) <= 128
+                                  and all(
+                                      character.isalnum() or character in {"-", "_"}
+                                      for character in family
+                                  )
+                              )
+                              uri_is_bounded_relative = (
+                                  isinstance(uri, str)
+                                  and bool(uri)
+                                  and len(uri.encode("utf-8")) <= 4096
+                                  and "\\" not in uri
+                                  and not uri.startswith("/")
+                                  and all(
+                                      segment not in {"", ".", ".."}
+                                      for segment in uri.split("/")
+                                  )
+                              )
+                              common_descriptor_shape = (
+                                  set(descriptor)
+                                  == {
+                                      "id",
+                                      "name",
+                                      "shortDescription",
+                                      "fullDescription",
+                                      "defaultConfiguration",
+                                      "properties",
+                                  }
+                                  and descriptor.get("id") == descriptor_id
+                                  and descriptor.get("name") == descriptor_id
+                                  and descriptor.get("defaultConfiguration")
+                                  == {"enabled": True}
+                                  and isinstance(short_description, dict)
+                                  and set(short_description) == {"text"}
+                                  and isinstance(short_description.get("text"), str)
+                                  and bool(short_description["text"])
+                                  and len(short_description["text"].encode("utf-8")) <= 1024
+                                  and isinstance(full_description, dict)
+                                  and set(full_description) == {"text"}
+                                  and isinstance(full_description.get("text"), str)
+                                  and bool(full_description["text"])
+                                  and len(full_description["text"].encode("utf-8")) <= 4096
+                              )
+                              if successfully_extracted:
+                                  descriptor_shape = (
+                                      component_index > 0
+                                      and isinstance(descriptor_properties, dict)
+                                      and set(descriptor_properties)
+                                      == {"tags", "description", "id", "kind", "name"}
+                                      and descriptor_properties.get("tags")
+                                      == ["successfully-extracted-files"]
+                                      and descriptor_properties.get("description")
+                                      == full_description.get("text")
+                                      and descriptor_properties.get("id") == descriptor_id
+                                      and descriptor_properties.get("kind") == "diagnostic"
+                                      and descriptor_properties.get("name")
+                                      == short_description.get("text")
+                                  )
+                              else:
+                                  descriptor_shape = (
+                                      component_index == 0
+                                      and short_description
+                                      == {"text": "Expected extracted files"}
+                                      and full_description
+                                      == {
+                                          "text": (
+                                              "Files appearing in the source archive that "
+                                              "are expected to be extracted."
+                                          )
+                                      }
+                                      and isinstance(descriptor_properties, dict)
+                                      and set(descriptor_properties)
+                                      == {"tags", "languageDisplayName"}
+                                      and descriptor_properties.get("tags")
+                                      == ["expected-extracted-files", "telemetry"]
+                                      and isinstance(
+                                          descriptor_properties.get("languageDisplayName"),
+                                          str,
+                                      )
+                                      and bool(descriptor_properties["languageDisplayName"])
+                                      and len(
+                                          descriptor_properties[
+                                              "languageDisplayName"
+                                          ].encode("utf-8")
+                                      )
+                                      <= 128
+                                  )
+                              if (
+                                  notification_field != "toolExecutionNotifications"
+                                  or set(notification)
+                                  != {
+                                      "descriptor",
+                                      "level",
+                                      "locations",
+                                      "message",
+                                      "properties",
+                                  }
+                                  or notification.get("descriptor") != expected_reference
+                                  or level != "none"
+                                  or message != {"text": ""}
+                                  or notification.get("properties")
+                                  != {"formattedMessage": {"text": ""}}
+                                  or not isinstance(location, dict)
+                                  or set(location) != {"physicalLocation"}
+                                  or not isinstance(physical, dict)
+                                  or set(physical) != {"artifactLocation"}
+                                  or not isinstance(artifact, dict)
+                                  or set(artifact) != {"uri", "uriBaseId", "index"}
+                                  or artifact.get("uriBaseId") != "%SRCROOT%"
+                                  or isinstance(artifact_index, bool)
+                                  or not isinstance(artifact_index, int)
+                                  or artifact_index < 0
+                                  or not family_is_bounded
+                                  or not uri_is_bounded_relative
+                                  or not common_descriptor_shape
+                                  or not descriptor_shape
+                              ):
+                                  raise SystemExit(
+                                      "CodeQL extraction telemetry does not match the pinned allowlist"
                                   )
                           else:
                               if level in {"warning", "error"}:

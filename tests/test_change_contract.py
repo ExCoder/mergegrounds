@@ -404,9 +404,6 @@ class ChangeContractTests(unittest.TestCase):
             fixture.close()
 
     def test_non_finite_and_oversized_contracts_deny(self) -> None:
-        def non_finite(value: dict[str, Any]) -> None:
-            value["risk"]["score"] = float("nan")
-
         declaration = change_contract(self.fixture.design_raw)
         raw = json.dumps(declaration, allow_nan=True).replace('"risk": {', '"risk": {"score": NaN,', 1).encode()
         head, _ = self.fixture.add_change(raw=raw)
