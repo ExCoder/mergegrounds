@@ -54,7 +54,7 @@
     },
     ".github/workflows/release.yml": {
       "mode": "100644",
-      "sha256": "c7862fa4f2bc5437bdd7d40d98d67ab7b4b1f08d15cf9427eb087963eb04dd7e"
+      "sha256": "9dc2d0631bfba66e56cb19772c9bedfa41cef1d386e99162d206cb16a57848bc"
     },
     ".github/workflows/scorecard.yml": {
       "mode": "100644",
@@ -126,7 +126,7 @@
     },
     ".mergegrounds/mergegrounds.toml": {
       "mode": "100644",
-      "sha256": "cf03264b609d56ff7d660cc209f0fc7ddf24649a1ab1f3a03cfea762b832f386"
+      "sha256": "8b77facc8cea67600779916fd1dc2f7f95329920d791356f57b84eb9a19ecca3"
     },
     ".mergegrounds/profiles/fast.toml": {
       "mode": "100644",
@@ -148,9 +148,25 @@
       "mode": "100644",
       "sha256": "a801e442497f86aaf0763435145903fc59397fc84cd0ff35a39363405e48b1bf"
     },
+    "CHANGELOG.md": {
+      "mode": "100644",
+      "sha256": "50f119325f8a6addd9ca4b25d3f3a4919c2d9d3affde3b52af7beb8461f28279"
+    },
+    "CODE_OF_CONDUCT.md": {
+      "mode": "100644",
+      "sha256": "88e62284285e637f4e31e810c844bc7a6b84de26eb584db4ce5dd978d7833000"
+    },
+    "GOVERNANCE.md": {
+      "mode": "100644",
+      "sha256": "2f804d8702b19697d96ad95b44918a878228ab04a96457d69cee2780e7fe0f64"
+    },
+    "README.md": {
+      "mode": "100644",
+      "sha256": "a49f4ce4f10d2f75b39787a10b8dfdc0d719d0284ea5c8c92c3826195a783e65"
+    },
     "SECURITY.md": {
       "mode": "100644",
-      "sha256": "a534d8388a254ac56056644fc083c9390cc184077678f090a5258823362cd543"
+      "sha256": "1b2548dd3324224e40b72cf938b46865d40eaf7e680c86e3bfcc92ff3462b4b5"
     },
     "VERSION": {
       "mode": "100644",
@@ -159,6 +175,14 @@
     "docs/decisions/README.md": {
       "mode": "100644",
       "sha256": "6925e3d94de6a8f5bb96afbbf81dc8d4bf4cede69cfa70da5de00166fbd9e33f"
+    },
+    "docs/installation.md": {
+      "mode": "100644",
+      "sha256": "0808a38c942e355eb2ca1b3f686ff713c89579c42c68fb676a22217a78a605e5"
+    },
+    "docs/releasing.md": {
+      "mode": "100644",
+      "sha256": "1b6088b20b153d5533eff5e1f14c7dff92c166a1f0d693fd3479f338b26716e1"
     },
     "mergegrounds-custom": {
       "mode": "100755",
@@ -190,11 +214,11 @@
     },
     "scripts/manage_plugin.py": {
       "mode": "100644",
-      "sha256": "85124e1bdfd66460473de24f8b63f3885e564e5dbacf30b5338b33fa9b77d4ad"
+      "sha256": "88e6a1e9a5676da8e328af1e127d73bcf87dc2a9fd167972f85d70fd5de9398d"
     },
     "scripts/mergegrounds.py": {
       "mode": "100755",
-      "sha256": "e640c1b725298cdcbbbbdcccd6a83061b92ae84c02fb9b020df6e94603005040"
+      "sha256": "91ad1f4259f5d3b7a92c9c418357aa9637c531c73b438a10c1df8cfb42d887ce"
     },
     "scripts/scaffold_change.py": {
       "mode": "100755",
@@ -230,7 +254,7 @@
     },
     "skills/mergegrounds/references/github-hardening.md": {
       "mode": "100644",
-      "sha256": "00260661838e2f9548c0bff51f38d4d535cb2826829a4c0b3649d64ef79402c8"
+      "sha256": "11877f6f8188fb383905b584aa182d6b4721acbe6019fa3af94880c95e19c43a"
     },
     "skills/mergegrounds/references/mutation-testing.md": {
       "mode": "100644",
@@ -253,7 +277,7 @@
       "sha256": "e8b7ed1d367d6179ba5cc50f7560071ddb6944760dfb3db17fc12129db5c13dc"
     }
   },
-  "generated_at": "2026-09-05T14:55:53Z",
-  "git_commit": "873212ff295bf477df5e2533d595cfa4e2e33130",
+  "generated_at": "2026-09-05T18:06:41Z",
+  "git_commit": "d48800ad4d16de676183647b72c1eafefc84e7f6",
   "schema_version": 2
 }
