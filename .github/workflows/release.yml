@@ -20,7 +20,7 @@ jobs:
     permissions:
       contents: read
     steps:
-      - name: Require the GitHub-verified public maintainer identity
+      - name: Require the GitHub-verified maintainer account
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         with:
           script: |
@@ -30,7 +30,6 @@ jobs:
               ref: context.sha,
             });
             const verification = commit.commit.verification ?? {};
-            const author = commit.commit.author ?? {};
             if (verification.verified !== true || verification.reason !== "valid") {
               core.setFailed(
                 `Release commit is not GitHub-verified: ${verification.reason ?? "unknown"}`,
@@ -38,10 +37,11 @@ jobs:
             }
             if (
               commit.author?.login !== "ExCoder" ||
-              author.name !== "ExCoder" ||
-              author.email !== "3510267+ExCoder@users.noreply.github.com"
+              commit.committer?.login !== "web-flow"
             ) {
-              core.setFailed("Release commit does not use the required public ExCoder identity");
+              core.setFailed(
+                "Release commit is not a GitHub-authored merge attributed to ExCoder",
+              );
             }
 
   build:

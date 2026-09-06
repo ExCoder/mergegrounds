@@ -1,8 +1,8 @@
 # Release verification and promotion
 
 The tag-triggered `Release Candidate` workflow first uses a no-checkout,
-read-only job to require a GitHub-verified release commit with the public
-`ExCoder` noreply identity. It then validates the version, requires an annotated
+read-only job to require a GitHub-verified, GitHub-authored merge attributed to
+the public `ExCoder` account. It then validates the version, requires an annotated
 tag, binds its peeled commit to the event SHA and the exact current default-
 branch HEAD, requires a clean checkout, runs the policy and unit suite, and
 compares two deterministic builds made from immutable Git objects. Both builds
@@ -31,8 +31,10 @@ Before pushing a release tag:
 3. Enable GitHub immutable releases. This setting is external state and must be
    checked again before promotion.
 4. Put the final release commit on the protected default branch, confirm GitHub
-   reports its signature as `verified: true` with reason `valid`, and confirm it
-   carries the documented public maintainer identity. Ensure `VERSION`, plugin
+   reports its signature as `verified: true` with reason `valid`, and confirm the
+   REST identity links the author to `ExCoder` and the committer to GitHub's
+   `web-flow` account. Raw Git author names and emails are mutable profile fields
+   and are not used as authentication claims. Ensure `VERSION`, plugin
    manifest, changelog, tag name, and release notes agree.
 5. Push the protected branch first. Only then push its annotated version tag.
    The tag target must still be the exact current default-branch HEAD when the
@@ -63,8 +65,7 @@ gh api "repos/$repository/commits/$release_sha" --jq -e '
   .commit.verification.verified == true and
   .commit.verification.reason == "valid" and
   .author.login == "ExCoder" and
-  .commit.author.name == "ExCoder" and
-  .commit.author.email == "3510267+ExCoder@users.noreply.github.com"'
+  .committer.login == "web-flow"'
 run_id="$(gh run list -R "$repository" -w release.yml -c "$release_sha" \
   -e push -s success -L 1 --json databaseId --jq '.[0].databaseId // empty')"
 run_attempt="$(gh run view "$run_id" -R "$repository" \

@@ -438,7 +438,9 @@ class PublicReleaseTests(unittest.TestCase):
             workflow,
         )
         self.assertIn("verification.verified", workflow)
-        self.assertIn("3510267+ExCoder@users.noreply.github.com", workflow)
+        self.assertIn('commit.author?.login !== "ExCoder"', workflow)
+        self.assertIn('commit.committer?.login !== "web-flow"', workflow)
+        self.assertNotIn("commit.author.email", workflow)
         self.assertIn("needs: identity", workflow)
         self.assertIn("git cat-file -t \"refs/tags/$RELEASE_REF\"", workflow)
         self.assertIn('git merge-base --is-ancestor "$RELEASE_SHA"', workflow)

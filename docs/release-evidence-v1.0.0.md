@@ -8,7 +8,7 @@ verification procedure in [releasing.md](releasing.md).
 ## Candidate scope
 
 - Product and plugin version: `1.0.0`.
-- Public identity: `ExCoder <3510267+ExCoder@users.noreply.github.com>`.
+- Public maintainer account: [`@ExCoder`](https://github.com/ExCoder).
 - Intended assurance claim: Portable starter and reference implementation.
 - Explicitly excluded claim: no assertion that arbitrary code is safe or that
   Maximum Assurance is deployed by installing this repository alone.
@@ -54,8 +54,8 @@ must not be mistaken for independently retained release evidence.
 Promotion is denied until every item below is rechecked against external state:
 
 1. The repository is public and the final default-branch commit is
-   GitHub-verified with reason `valid`, authored by the documented noreply
-   identity.
+   GitHub-verified with reason `valid`; GitHub's REST identity links the author
+   to `ExCoder` and the committer to `web-flow`.
 2. The final commit has successful MergeGrounds and CodeQL required checks.
 3. The active ruleset applies to administrators with no bypass, requires pull
    requests, linear history, signed commits, and the stable admission checks,
