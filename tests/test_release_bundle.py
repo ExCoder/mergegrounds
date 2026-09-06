@@ -13,10 +13,10 @@ import sys
 import tarfile
 import tempfile
 import unittest
+import unittest.mock as mock
 import zipfile
 from contextlib import contextmanager
 from pathlib import Path
-from unittest import mock
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -421,7 +421,7 @@ class ReleaseBundleValidationTests(unittest.TestCase):
             for index, byte in enumerate(value[:64]):
                 if byte in b"abcdef":
                     return value[:index] + bytes([byte - 32]) + value[index + 1 :]
-            self.fail("fixture digest unexpectedly contains no hexadecimal letter")
+            raise AssertionError("fixture digest contains no hexadecimal letter")
 
         mutations = (
             ("uppercase digest", uppercase_digest),

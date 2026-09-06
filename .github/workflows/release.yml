@@ -67,7 +67,7 @@ jobs:
       - name: Verify the reviewed release-tool authority before execution
         shell: bash
         env:
-          REVIEWED_BUILD_RELEASE_SHA256: d0b8c909c452cde2e0acc7c6a531ce3159c47b2233ce47c4d74d61583a2f185f
+          REVIEWED_BUILD_RELEASE_SHA256: c67b80305f88d34f254f34a03a401fc3b59845556483e2b36c78f5b50719bc03
           REVIEWED_VALIDATE_RELEASE_SHA256: af395d41990236e7c6f6655aa60e9900dba1716bef3ae1ba0f0f71ad47f57663
         run: |
           set -euo pipefail
@@ -186,7 +186,7 @@ jobs:
       - name: Verify the reviewed release-tool authority before execution
         shell: bash
         env:
-          REVIEWED_BUILD_RELEASE_SHA256: d0b8c909c452cde2e0acc7c6a531ce3159c47b2233ce47c4d74d61583a2f185f
+          REVIEWED_BUILD_RELEASE_SHA256: c67b80305f88d34f254f34a03a401fc3b59845556483e2b36c78f5b50719bc03
           REVIEWED_VALIDATE_RELEASE_SHA256: af395d41990236e7c6f6655aa60e9900dba1716bef3ae1ba0f0f71ad47f57663
         run: |
           set -euo pipefail

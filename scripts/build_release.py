@@ -482,6 +482,7 @@ def atomic_write(directory_fd: int, name: str, payload: bytes) -> None:
         try:
             os.unlink(temporary, dir_fd=directory_fd)
         except FileNotFoundError:
+            # The successful publish path already removed the temporary link.
             pass
 
 
