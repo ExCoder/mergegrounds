@@ -38,6 +38,7 @@ SOURCE_ONLY_PATHS = {
     ".mergegrounds/custom.enabled",
     ".github/workflows/release.yml",
     "scripts/build_release.py",
+    "scripts/validate_release.py",
     "scripts/manage_plugin.py",
     "scripts/self_check.py",
 }
