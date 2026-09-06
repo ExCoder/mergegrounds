@@ -183,6 +183,8 @@ class BootstrapTests(unittest.TestCase):
             source_codeowners.write_text("* @real-upstream-owner\n", encoding="utf-8")
             marker = source / ".mergegrounds/custom.enabled"
             marker.write_text("source-only\n", encoding="utf-8")
+            (source / "scripts/build_release.py").write_text("source release builder\n", encoding="utf-8")
+            (source / "scripts/validate_release.py").write_text("source release validator\n", encoding="utf-8")
 
             with mock.patch.object(bootstrap, "SOURCE_ROOT", source):
                 mappings = {
@@ -197,6 +199,8 @@ class BootstrapTests(unittest.TestCase):
                 mappings[".github/CODEOWNERS"],
             )
             self.assertNotIn(".mergegrounds/custom.enabled", mappings)
+            self.assertNotIn("scripts/build_release.py", mappings)
+            self.assertNotIn("scripts/validate_release.py", mappings)
             self.assertEqual(
                 "* @org/security-team\n",
                 (target / ".github/CODEOWNERS").read_text(encoding="utf-8"),

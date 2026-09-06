@@ -77,7 +77,7 @@ TRUSTED_ADMISSION_WORKFLOW_SHA256 = {
     ".github/workflows/mergegrounds.yml": "5dd3aeafaf218ef0b4f6f5a97fc7e91a4952299c37595ba4648b1d019c8f0bc2",
     ".github/workflows/full-scan.yml": "bb18b0e0c38e0b57df38d6919a3faae6021ea11ff07d16c80a8d8b2de355cb78",
     ".github/workflows/codeql.yml": "64e4bc11a1209d51073267d9d9c480e573aa459ecff35246de95ec169ae41b49",
-    ".github/workflows/release.yml": "9dc2d0631bfba66e56cb19772c9bedfa41cef1d386e99162d206cb16a57848bc",
+    ".github/workflows/release.yml": "e54371c62a53061bc2ece20b0c720f22ced2442c1130cd0473522d20b5e28e75",
 }
 RFC3339_UTC = re.compile(
     r"^[0-9]{4}-[0-9]{2}-[0-9]{2}T"
