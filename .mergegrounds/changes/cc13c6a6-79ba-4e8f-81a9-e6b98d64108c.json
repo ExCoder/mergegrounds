@@ -1,0 +1,122 @@
+{
+  "acceptance_criteria": [
+    {
+      "class": "positive",
+      "failure_behavior": "Any missing gate, unresolved identifier, or irreproducible result denies release publication.",
+      "id": "AC-RELEASE-EVIDENCE-COMPLETE",
+      "observable": "The versioned document records all required promotion gates and binds them to exact source commits, workflow runs, retained artifacts, checksums, and verifier identities.",
+      "oracle": {
+        "evidence_class": "independent_human",
+        "kind": "external_review",
+        "ref": "REVIEW-RELEASE-EVIDENCE-COMPLETENESS"
+      }
+    },
+    {
+      "class": "negative",
+      "failure_behavior": "Any accepted stale, mutable, unsigned, self-asserted, or mismatched reference denies release publication.",
+      "id": "AC-RELEASE-EVIDENCE-REJECTS-MISMATCH",
+      "observable": "A deliberately stale commit, mutable branch reference, mismatched checksum, missing artifact, or unverified identity is rejected and cannot be reported as a passing promotion gate.",
+      "oracle": {
+        "evidence_class": "trusted_execution",
+        "kind": "test",
+        "ref": "TEST-RELEASE-EVIDENCE-NEGATIVE"
+      }
+    },
+    {
+      "class": "adversarial",
+      "failure_behavior": "Any unresolved counterexample, unavailable retained input, or absent independent challenge denies release publication.",
+      "id": "AC-RELEASE-EVIDENCE-WITHSTANDS-CHALLENGE",
+      "observable": "An independent challenger reproduces each material provenance and integrity assertion from immutable GitHub state and retained artifact bytes without relying on author claims.",
+      "oracle": {
+        "evidence_class": "independent_human",
+        "kind": "external_review",
+        "ref": "REVIEW-RELEASE-EVIDENCE-ADVERSARIAL"
+      }
+    },
+    {
+      "class": "recovery",
+      "failure_behavior": "If the prior verified state cannot be restored without publishing ambiguous evidence, the release remains quarantined.",
+      "id": "AC-RELEASE-EVIDENCE-RECOVERS-SAFELY",
+      "observable": "When a claim fails verification, publication remains blocked, the candidate is quarantined, and the last verified release state is preserved without rewriting retained evidence.",
+      "oracle": {
+        "evidence_class": "trusted_execution",
+        "kind": "test",
+        "ref": "TEST-RELEASE-EVIDENCE-RECOVERY"
+      }
+    }
+  ],
+  "ai_assistance": {
+    "affected_paths": [
+      ".mergegrounds/changes/cc13c6a6-79ba-4e8f-81a9-e6b98d64108c.json",
+      ".mergegrounds/control-plane.lock.json"
+    ],
+    "systems": [
+      {
+        "model": "GPT-5",
+        "provider": "OpenAI",
+        "purposes": [
+          "post-squash control-plane reseal declaration",
+          "release preparation"
+        ]
+      }
+    ],
+    "used": true
+  },
+  "challenge_plan": [
+    {
+      "attack_surface": "Verified GitHub squash identity, source-tree equality, critical-path digests, sealed commit ancestry, and release tag target",
+      "claim_to_falsify": "The resealed lock cannot authorize a different tree, identity, or critical-path state than the verified squash result.",
+      "evaluation_ref": "REVIEW-RELEASE-EVIDENCE-ADVERSARIAL",
+      "id": "CH-INDEPENDENT",
+      "required_producer": "independent_human"
+    }
+  ],
+  "change_id": "cc13c6a6-79ba-4e8f-81a9-e6b98d64108c",
+  "design": {
+    "record_id": "6b029ec5-f510-4dde-9d82-c1b2ae7473cc",
+    "record_path": "docs/decisions/6b029ec5-f510-4dde-9d82-c1b2ae7473cc.json",
+    "record_sha256": "sha256:e49401b4d284b8e16531f8937c07f7db4281773b23963c51596b86c821eb7145"
+  },
+  "evidence_policy": {
+    "author_claims_are_evidence": false,
+    "model_output_is_evidence": false,
+    "self_review_is_evidence": false
+  },
+  "failure_modes": [
+    {
+      "condition": "A recorded source commit, workflow run, checksum, attestation, reviewer identity, or artifact differs from independently observed immutable state.",
+      "detection_ref": "TEST-RELEASE-EVIDENCE-NEGATIVE",
+      "expected_behavior": "The conflicting assertion is reported as non-passing, the candidate remains quarantined, and release publication is denied.",
+      "id": "FM-RELEASE-EVIDENCE-MISMATCH",
+      "rollback_trigger": "Any material identity or integrity mismatch triggers quarantine and restoration of the last verified release state."
+    },
+    {
+      "condition": "Required evidence is missing, expired, inaccessible, produced only by the candidate, or expressed through a mutable reference.",
+      "detection_ref": "REVIEW-RELEASE-EVIDENCE-ADVERSARIAL",
+      "expected_behavior": "The corresponding gate remains non-passing and neither prose nor maintainer confidence can substitute for independently reproducible evidence.",
+      "id": "FM-RELEASE-EVIDENCE-UNAVAILABLE",
+      "rollback_trigger": "Missing independently reproducible evidence prevents publication and preserves the previously verified state."
+    }
+  ],
+  "lane": "implementation",
+  "outcome_metric_ids": [
+    "METRIC-REPRODUCIBLE-RELEASE-ASSERTIONS"
+  ],
+  "risk": {
+    "claimed_tier": "R4",
+    "impact_flags": [
+      "control_plane"
+    ],
+    "rationale": "The change updates only the governed control-plane lock and its declaration after GitHub creates the verified squash commit. It changes no product code or workflow behavior, but a wrong binding could authorize release from the wrong revision, so R4 and independent challenge remain mandatory."
+  },
+  "schema_version": 1,
+  "summary": {
+    "approach": "Regenerate the deterministic control-plane lock from the exact verified GitHub squash commit, record the reseal as a single governed R4 change, and require strict verification before tagging.",
+    "non_goals": [
+      "Changing runtime code, documentation, policy thresholds, branch protection, or release workflow behavior",
+      "Treating this declaration, pull-request prose, author assertions, or model output as admission evidence",
+      "Rewriting the verified squash commit or weakening any admission gate"
+    ],
+    "problem": "GitHub squash merging creates a new verified commit after branch validation, so the prior deterministic control-plane seal correctly becomes stale even though the reviewed source tree is unchanged. Tagging must remain blocked until that exact immutable squash result is resealed through the normal governed pull-request path."
+  }
+}
