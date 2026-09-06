@@ -1,0 +1,122 @@
+{
+  "acceptance_criteria": [
+    {
+      "class": "positive",
+      "failure_behavior": "Any missing gate, unresolved identifier, or irreproducible result denies release publication.",
+      "id": "AC-RELEASE-EVIDENCE-COMPLETE",
+      "observable": "The versioned document records all required promotion gates and binds them to exact source commits, workflow runs, retained artifacts, checksums, and verifier identities.",
+      "oracle": {
+        "evidence_class": "independent_human",
+        "kind": "external_review",
+        "ref": "REVIEW-RELEASE-EVIDENCE-COMPLETENESS"
+      }
+    },
+    {
+      "class": "negative",
+      "failure_behavior": "Any accepted stale, mutable, unsigned, self-asserted, or mismatched reference denies release publication.",
+      "id": "AC-RELEASE-EVIDENCE-REJECTS-MISMATCH",
+      "observable": "A deliberately stale commit, mutable branch reference, mismatched checksum, missing artifact, or unverified identity is rejected and cannot be reported as a passing promotion gate.",
+      "oracle": {
+        "evidence_class": "trusted_execution",
+        "kind": "test",
+        "ref": "TEST-RELEASE-EVIDENCE-NEGATIVE"
+      }
+    },
+    {
+      "class": "adversarial",
+      "failure_behavior": "Any unresolved counterexample, unavailable retained input, or absent independent challenge denies release publication.",
+      "id": "AC-RELEASE-EVIDENCE-WITHSTANDS-CHALLENGE",
+      "observable": "An independent challenger reproduces each material provenance and integrity assertion from immutable GitHub state and retained artifact bytes without relying on author claims.",
+      "oracle": {
+        "evidence_class": "independent_human",
+        "kind": "external_review",
+        "ref": "REVIEW-RELEASE-EVIDENCE-ADVERSARIAL"
+      }
+    },
+    {
+      "class": "recovery",
+      "failure_behavior": "If the prior verified state cannot be restored without publishing ambiguous evidence, the release remains quarantined.",
+      "id": "AC-RELEASE-EVIDENCE-RECOVERS-SAFELY",
+      "observable": "When a claim fails verification, publication remains blocked, the candidate is quarantined, and the last verified release state is preserved without rewriting retained evidence.",
+      "oracle": {
+        "evidence_class": "trusted_execution",
+        "kind": "test",
+        "ref": "TEST-RELEASE-EVIDENCE-RECOVERY"
+      }
+    }
+  ],
+  "ai_assistance": {
+    "affected_paths": [
+      ".mergegrounds/changes/677d2d1c-4e51-48ee-b03e-01c612782686.json",
+      "docs/decisions/6b029ec5-f510-4dde-9d82-c1b2ae7473cc.json"
+    ],
+    "systems": [
+      {
+        "model": "GPT-5",
+        "provider": "OpenAI",
+        "purposes": [
+          "design drafting",
+          "change contract drafting"
+        ]
+      }
+    ],
+    "used": true
+  },
+  "challenge_plan": [
+    {
+      "attack_surface": "Immutable Git objects, GitHub workflow identities, retained artifact bytes, checksums, attestations, and release metadata",
+      "claim_to_falsify": "Every passing v1.0.0 promotion claim can be reproduced independently from exact immutable identities and retained evidence.",
+      "evaluation_ref": "REVIEW-RELEASE-EVIDENCE-ADVERSARIAL",
+      "id": "CH-REPRODUCE-RELEASE-CLAIMS",
+      "required_producer": "independent_human"
+    }
+  ],
+  "change_id": "677d2d1c-4e51-48ee-b03e-01c612782686",
+  "design": {
+    "record_id": "6b029ec5-f510-4dde-9d82-c1b2ae7473cc",
+    "record_path": "docs/decisions/6b029ec5-f510-4dde-9d82-c1b2ae7473cc.json",
+    "record_sha256": "sha256:e49401b4d284b8e16531f8937c07f7db4281773b23963c51596b86c821eb7145"
+  },
+  "evidence_policy": {
+    "author_claims_are_evidence": false,
+    "model_output_is_evidence": false,
+    "self_review_is_evidence": false
+  },
+  "failure_modes": [
+    {
+      "condition": "A recorded source commit, workflow run, checksum, attestation, reviewer identity, or artifact differs from independently observed immutable state.",
+      "detection_ref": "TEST-RELEASE-EVIDENCE-NEGATIVE",
+      "expected_behavior": "The conflicting assertion is reported as non-passing, the candidate remains quarantined, and release publication is denied.",
+      "id": "FM-RELEASE-EVIDENCE-MISMATCH",
+      "rollback_trigger": "Any material identity or integrity mismatch triggers quarantine and restoration of the last verified release state."
+    },
+    {
+      "condition": "Required evidence is missing, expired, inaccessible, produced only by the candidate, or expressed through a mutable reference.",
+      "detection_ref": "REVIEW-RELEASE-EVIDENCE-ADVERSARIAL",
+      "expected_behavior": "The corresponding gate remains non-passing and neither prose nor maintainer confidence can substitute for independently reproducible evidence.",
+      "id": "FM-RELEASE-EVIDENCE-UNAVAILABLE",
+      "rollback_trigger": "Missing independently reproducible evidence prevents publication and preserves the previously verified state."
+    }
+  ],
+  "lane": "design-only",
+  "outcome_metric_ids": [
+    "METRIC-REPRODUCIBLE-RELEASE-ASSERTIONS"
+  ],
+  "risk": {
+    "claimed_tier": "R3",
+    "impact_flags": [
+      "documentation"
+    ],
+    "rationale": "The change introduces a release-decision contract but does not alter runtime code, policy thresholds, credentials, or deployment behavior; the repository R3 baseline still applies."
+  },
+  "schema_version": 1,
+  "summary": {
+    "approach": "Add one immutable design record defining exact evidence identities, fail-closed release behavior, independent challenge, and recovery before the release-evidence implementation is proposed.",
+    "non_goals": [
+      "Changing runtime code, policy thresholds, branch protection, or release workflow behavior",
+      "Treating this design record, pull-request prose, author assertions, or model output as admission evidence",
+      "Publishing the repository, changing account settings, or creating the final v1.0.0 release"
+    ],
+    "problem": "The v1.0.0 candidate has extensive verification evidence, but promotion requires a durable, independently reviewable record that binds every release claim to immutable identities and fails closed on mismatch or absence."
+  }
+}
