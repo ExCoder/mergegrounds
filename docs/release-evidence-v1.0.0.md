@@ -18,8 +18,12 @@ verification procedure in [releasing.md](releasing.md).
 
 The final release commit may contain documentation-only changes after that
 reseal. The release workflow must still prove a clean exact checkout, control
-integrity, version agreement, deterministic archives, and default-branch
-ancestry on the final tagged commit.
+integrity, version agreement, deterministic archives, and equality with the
+exact current default-branch HEAD on the final tagged commit. It must run
+`scripts/validate_release.py` against the commit-, tree-, and ref-bound bundle
+before retention and again in a separate job without OIDC authority. Only those
+re-uploaded prevalidated bytes may reach the no-checkout/no-candidate-code
+attestation job.
 
 ## Reproduced candidate checks
 
@@ -61,13 +65,20 @@ Promotion is denied until every item below is rechecked against external state:
    GitHub state. The custom CodeQL check and its locally validated SARIF are
    verified through the required workflow; no GitHub Code Scanning UI/API
    analysis is claimed while SARIF upload remains disabled.
-5. The unsigned annotated `v1.0.0` tag peels to the exact verified default-
-   branch commit. The tag is not represented as GPG- or SSH-signed.
+5. The unsigned annotated `v1.0.0` tag peels to the exact verified current
+   default-branch HEAD. A stale ancestor is denied. The tag is not represented
+   as GPG- or SSH-signed.
 6. The tag-triggered workflow succeeds and retains exactly two archives,
-   `release-manifest.json`, and `SHA256SUMS`.
+   `release-manifest.json`, and `SHA256SUMS`; each candidate file is at most
+   32 MiB and the source snapshot stays within the builder's matching bound.
+   The SHA-1 blob identities are independently recomputed; portable-path
+   collisions, the reserved generated manifest path, duplicate archive members,
+   and member/decompressed resource-bound violations are denied.
 7. All four retained files pass checksums and GitHub/Sigstore attestation
    verification constrained to the expected repository, workflow, tag ref,
-   source digest, signer digest, and GitHub-hosted runner.
+   source digest, signer digest, and GitHub-hosted runner. Raw equality with the
+   independently regenerated expected bundle is established before candidate
+   parsers run, and the OIDC job executes no repository candidate code.
 8. The retained bytes are promoted without rebuilding, the GitHub Release is
    immutable, and `gh release verify v1.0.0` succeeds.
 9. Anonymous users can reach the repository, release, documentation, demo,

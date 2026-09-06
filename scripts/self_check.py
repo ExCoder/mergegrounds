@@ -29,7 +29,9 @@ CORE_SOURCES = (
     "scripts/mergegrounds.py",
     "scripts/ai_assurance.py",
     "scripts/bootstrap.py",
+    "scripts/build_release.py",
     "scripts/scaffold_change.py",
+    "scripts/validate_release.py",
 )
 PRIVATE_KEY = re.compile(rb"-----BEGIN (?:RSA |EC |DSA |OPENSSH )?PRIVATE KEY-----")
 TOKEN_PATTERNS = (

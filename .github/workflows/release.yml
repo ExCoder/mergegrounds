@@ -64,6 +64,17 @@ jobs:
         with:
           python-version: "3.13.15"
           check-latest: false
+      - name: Verify the reviewed release-tool authority before execution
+        shell: bash
+        env:
+          REVIEWED_BUILD_RELEASE_SHA256: d0b8c909c452cde2e0acc7c6a531ce3159c47b2233ce47c4d74d61583a2f185f
+          REVIEWED_VALIDATE_RELEASE_SHA256: af395d41990236e7c6f6655aa60e9900dba1716bef3ae1ba0f0f71ad47f57663
+        run: |
+          set -euo pipefail
+          printf '%s  %s\n' \
+            "$REVIEWED_BUILD_RELEASE_SHA256" scripts/build_release.py \
+            "$REVIEWED_VALIDATE_RELEASE_SHA256" scripts/validate_release.py \
+            | sha256sum --check --strict
       - name: Install hash-locked source verification tools
         shell: bash
         run: |
@@ -74,16 +85,21 @@ jobs:
         env:
           DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
           RELEASE_EVENT: ${{ github.event_name }}
+          RELEASE_FULL_REF: ${{ github.ref }}
           RELEASE_REF: ${{ github.ref_name }}
           RELEASE_REF_TYPE: ${{ github.ref_type }}
           RELEASE_SHA: ${{ github.sha }}
+          WORKFLOW_REF: ${{ github.workflow_ref }}
+          WORKFLOW_SHA: ${{ github.workflow_sha }}
         run: |
           set -euo pipefail
           [[ "$RELEASE_EVENT" == "push" ]]
           [[ "$RELEASE_REF_TYPE" == "tag" ]]
           [[ "$RELEASE_SHA" =~ ^[0-9a-f]{40,64}$ ]]
+          [[ "$WORKFLOW_SHA" == "$RELEASE_SHA" ]]
+          [[ "$WORKFLOW_REF" == "${GITHUB_REPOSITORY}/.github/workflows/release.yml@${RELEASE_FULL_REF}" ]]
           version="$(tr -d '\n' < VERSION)"
-          [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]
+          [[ "$version" =~ ^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]]
           [[ "$RELEASE_REF" == "v${version}" ]]
           [[ "$(git cat-file -t "refs/tags/$RELEASE_REF")" == "tag" ]]
           tagged_commit="$(git rev-parse "refs/tags/$RELEASE_REF^{commit}")"
@@ -92,6 +108,10 @@ jobs:
           git fetch --force --no-tags origin \
             "refs/heads/${DEFAULT_BRANCH}:refs/remotes/origin/${DEFAULT_BRANCH}"
           git merge-base --is-ancestor "$RELEASE_SHA" "refs/remotes/origin/$DEFAULT_BRANCH"
+          default_head="$(git rev-parse "refs/remotes/origin/$DEFAULT_BRANCH^{commit}")"
+          [[ "$default_head" == "$RELEASE_SHA" ]]
+          release_tree="$(git rev-parse "$RELEASE_SHA^{tree}")"
+          [[ "$release_tree" =~ ^[0-9a-f]{40,64}$ ]]
           test -z "$(git status --porcelain=v1 --untracked-files=all)"
           python3 -I scripts/mergegrounds.py verify-repo --strict
           python3 -I scripts/ai_assurance.py validate-policy
@@ -110,12 +130,23 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          python3 -I scripts/build_release.py --output-dir release-first
-          python3 -I scripts/build_release.py --output-dir release-second
+          release_tree="$(git rev-parse "$GITHUB_SHA^{tree}")"
+          [[ "$release_tree" =~ ^[0-9a-f]{40,64}$ ]]
+          RELEASE_TREE="$release_tree"
+          python3 -I scripts/build_release.py --output-dir release-first \
+            --expected-commit "$GITHUB_SHA" --expected-tree "$RELEASE_TREE"
+          python3 -I scripts/build_release.py --output-dir release-second \
+            --expected-commit "$GITHUB_SHA" --expected-tree "$RELEASE_TREE"
           cmp release-first/SHA256SUMS release-second/SHA256SUMS
           cmp release-first/release-manifest.json release-second/release-manifest.json
           cmp release-first/mergegrounds-*.tar.gz release-second/mergegrounds-*.tar.gz
           cmp release-first/mergegrounds-*.zip release-second/mergegrounds-*.zip
+          python3 -I scripts/validate_release.py --bundle-dir release-first \
+            --expected-commit "$GITHUB_SHA" --expected-tree "$RELEASE_TREE" \
+            --expected-ref "$GITHUB_REF"
+          python3 -I scripts/validate_release.py --bundle-dir release-second \
+            --expected-commit "$GITHUB_SHA" --expected-tree "$RELEASE_TREE" \
+            --expected-ref "$GITHUB_REF"
           mv release-first release-dist
       - name: Retain the exact verified release candidate
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
@@ -131,75 +162,107 @@ jobs:
           retention-days: 14
           compression-level: 0
 
-  attest:
-    name: Release / Attest inert candidate bytes
+  validate:
+    name: Release / Independently validate candidate
     needs: build
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     permissions:
       actions: read
-      artifact-metadata: write
-      attestations: write
       contents: read
-      id-token: write
     steps:
+      - name: Checkout the exact tagged source without persisted credentials
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.ref }}
+          persist-credentials: false
+          fetch-depth: 0
+          show-progress: false
       - name: Install the exact parser runtime
         uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: "3.13.15"
           check-latest: false
+      - name: Verify the reviewed release-tool authority before execution
+        shell: bash
+        env:
+          REVIEWED_BUILD_RELEASE_SHA256: d0b8c909c452cde2e0acc7c6a531ce3159c47b2233ce47c4d74d61583a2f185f
+          REVIEWED_VALIDATE_RELEASE_SHA256: af395d41990236e7c6f6655aa60e9900dba1716bef3ae1ba0f0f71ad47f57663
+        run: |
+          set -euo pipefail
+          printf '%s  %s\n' \
+            "$REVIEWED_BUILD_RELEASE_SHA256" scripts/build_release.py \
+            "$REVIEWED_VALIDATE_RELEASE_SHA256" scripts/validate_release.py \
+            | sha256sum --check --strict
       - name: Download only this attempt's candidate bundle
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           name: mergegrounds-release-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
           path: release-dist
-      - name: Validate candidate names, types, sizes, and checksums without executing it
+      - name: Validate the exact Git-bound candidate without executing archive contents
+        shell: bash
+        env:
+          WORKFLOW_REF: ${{ github.workflow_ref }}
+          WORKFLOW_SHA: ${{ github.workflow_sha }}
+        run: |
+          set -euo pipefail
+          [[ "$WORKFLOW_SHA" == "$GITHUB_SHA" ]]
+          [[ "$WORKFLOW_REF" == "${GITHUB_REPOSITORY}/.github/workflows/release.yml@${GITHUB_REF}" ]]
+          [[ "$(git rev-parse HEAD^{commit})" == "$GITHUB_SHA" ]]
+          release_tree="$(git rev-parse "$GITHUB_SHA^{tree}")"
+          [[ "$release_tree" =~ ^[0-9a-f]{40,64}$ ]]
+          RELEASE_TREE="$release_tree"
+          [[ "$(git rev-parse HEAD^{tree})" == "$RELEASE_TREE" ]]
+          python3 -I scripts/validate_release.py --bundle-dir release-dist \
+            --expected-commit "$GITHUB_SHA" --expected-tree "$RELEASE_TREE" \
+            --expected-ref "$GITHUB_REF"
+      - name: Retain only the independently validated bytes
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: mergegrounds-validated-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            release-dist/mergegrounds-*.tar.gz
+            release-dist/mergegrounds-*.zip
+            release-dist/release-manifest.json
+            release-dist/SHA256SUMS
+          if-no-files-found: error
+          include-hidden-files: false
+          retention-days: 14
+          compression-level: 0
+
+  attest:
+    name: Release / Attest prevalidated inert bytes
+    needs: validate
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      actions: read
+      artifact-metadata: write
+      attestations: write
+      id-token: write
+    steps:
+      - name: Download only this attempt's prevalidated bundle
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: mergegrounds-validated-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: release-dist
+      - name: Require the fixed inert bundle shape
         shell: bash
         run: |
           set -euo pipefail
-          python3 -I - <<'PY'
-          import hashlib
-          import json
-          import re
-          import stat
-          from pathlib import Path
-
-          root = Path("release-dist")
-          entries = list(root.iterdir())
-          if len(entries) != 4:
-              raise SystemExit("candidate bundle must contain exactly four files")
-          for path in entries:
-              mode = path.lstat().st_mode
-              if not stat.S_ISREG(mode) or mode & 0o111 or path.stat().st_size > 32 * 1024 * 1024:
-                  raise SystemExit(f"unsafe candidate entry: {path.name}")
-          manifest_path = root / "release-manifest.json"
-          manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
-          version = manifest.get("version")
-          if not isinstance(version, str) or re.fullmatch(r"[0-9]+\.[0-9]+\.[0-9]+", version) is None:
-              raise SystemExit("release manifest has an invalid version")
-          expected = {
-              f"mergegrounds-{version}.tar.gz",
-              f"mergegrounds-{version}.zip",
-              "release-manifest.json",
-              "SHA256SUMS",
-          }
-          if {path.name for path in entries} != expected:
-              raise SystemExit("candidate bundle contains unexpected names")
-          checksum_lines = (root / "SHA256SUMS").read_text(encoding="ascii").splitlines()
-          if len(checksum_lines) != 3:
-              raise SystemExit("checksum manifest must bind exactly three files")
-          observed = {}
-          for line in checksum_lines:
-              match = re.fullmatch(r"([0-9a-f]{64})  ([A-Za-z0-9._-]+)", line)
-              if match is None or match.group(2) in observed:
-                  raise SystemExit("malformed or duplicate checksum record")
-              observed[match.group(2)] = match.group(1)
-          if set(observed) != expected - {"SHA256SUMS"}:
-              raise SystemExit("checksum manifest names do not match candidate")
-          for name, digest in observed.items():
-              if hashlib.sha256((root / name).read_bytes()).hexdigest() != digest:
-                  raise SystemExit(f"checksum mismatch: {name}")
-          PY
+          version="${GITHUB_REF_NAME#v}"
+          [[ "$GITHUB_REF_NAME" == "v${version}" ]]
+          [[ "$version" =~ ^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]]
+          mapfile -d '' files < <(find release-dist -mindepth 1 -maxdepth 1 -print0)
+          [[ "${#files[@]}" -eq 4 ]]
+          for name in \
+            "mergegrounds-${version}.tar.gz" \
+            "mergegrounds-${version}.zip" \
+            release-manifest.json SHA256SUMS; do
+            path="release-dist/${name}"
+            [[ -f "$path" && ! -L "$path" && ! -x "$path" ]]
+            [[ "$(stat --format='%s' -- "$path")" -le 33554432 ]]
+          done
       - name: Attest exact release candidate files
         uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
         with:
