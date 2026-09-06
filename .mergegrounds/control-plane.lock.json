@@ -54,7 +54,7 @@
     },
     ".github/workflows/release.yml": {
       "mode": "100644",
-      "sha256": "9dc2d0631bfba66e56cb19772c9bedfa41cef1d386e99162d206cb16a57848bc"
+      "sha256": "0934b9fd7f5d8e10e5b4606216540591b544b26d2b652ba64679d7759e72446d"
     },
     ".github/workflows/scorecard.yml": {
       "mode": "100644",
@@ -182,7 +182,7 @@
     },
     "docs/releasing.md": {
       "mode": "100644",
-      "sha256": "1b6088b20b153d5533eff5e1f14c7dff92c166a1f0d693fd3479f338b26716e1"
+      "sha256": "0d2fc4af98e9750d18f9653b804edbea8484e9f79a25fb1b175bbabbb1f62824"
     },
     "mergegrounds-custom": {
       "mode": "100755",
@@ -206,11 +206,11 @@
     },
     "scripts/bootstrap.py": {
       "mode": "100755",
-      "sha256": "06985a64ebc373286d2552bff474771db139febcbf80452f3d5b5c2eec6e1676"
+      "sha256": "98720b554bce621e81b1d59dd14ad59966c83ac269d9a3ecdb7f74ec81287395"
     },
     "scripts/build_release.py": {
       "mode": "100644",
-      "sha256": "4fa9aba0ae91eb3e89b64505ecedb3467ebc7dbd40a2127149f1a31f5f7a6936"
+      "sha256": "d0b8c909c452cde2e0acc7c6a531ce3159c47b2233ce47c4d74d61583a2f185f"
     },
     "scripts/manage_plugin.py": {
       "mode": "100644",
@@ -218,7 +218,7 @@
     },
     "scripts/mergegrounds.py": {
       "mode": "100755",
-      "sha256": "f05dab63b82b30995fd6bdd178bfb9d6b07f54759c000797568108023041b59b"
+      "sha256": "71971c8e4eee8c449b1888420cb8ad25d77c2bd3cbfcff0879299d441ff9db03"
     },
     "scripts/scaffold_change.py": {
       "mode": "100755",
@@ -226,7 +226,11 @@
     },
     "scripts/self_check.py": {
       "mode": "100644",
-      "sha256": "c9e0a977a546a91981bb4cf392e5ff882b3a8f6757832cbd76304aa1d352693f"
+      "sha256": "abe85196777cccf19ee8c0becf811748d461ba0fc10d136d54035e09e6d99169"
+    },
+    "scripts/validate_release.py": {
+      "mode": "100644",
+      "sha256": "af395d41990236e7c6f6655aa60e9900dba1716bef3ae1ba0f0f71ad47f57663"
     },
     "skills/mergegrounds/SKILL.md": {
       "mode": "100644",
@@ -277,7 +281,7 @@
       "sha256": "e8b7ed1d367d6179ba5cc50f7560071ddb6944760dfb3db17fc12129db5c13dc"
     }
   },
-  "generated_at": "2026-09-05T23:30:27Z",
-  "git_commit": "52b4df87de1c02d0a833b37b9ac13e59fecc04c9",
+  "generated_at": "2026-09-06T10:19:52Z",
+  "git_commit": "6866c1dbd8ed839cd9e1ee84c77c500e3e8691cb",
   "schema_version": 2
 }
