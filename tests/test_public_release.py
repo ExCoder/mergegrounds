@@ -9,11 +9,11 @@ import subprocess
 import sys
 import tempfile
 import unittest
+import unittest.mock as mock
 import unicodedata
 import zipfile
 from contextlib import contextmanager
 from pathlib import Path
-from unittest import mock
 
 
 ROOT = Path(__file__).resolve().parents[1]
