@@ -54,7 +54,7 @@
     },
     ".github/workflows/release.yml": {
       "mode": "100644",
-      "sha256": "cfa6e418f08dee54d677f7f39ade01e26fe831c9a7e9cf16165d959af3b3ea1e"
+      "sha256": "e54371c62a53061bc2ece20b0c720f22ced2442c1130cd0473522d20b5e28e75"
     },
     ".github/workflows/scorecard.yml": {
       "mode": "100644",
@@ -210,7 +210,7 @@
     },
     "scripts/build_release.py": {
       "mode": "100644",
-      "sha256": "d0b8c909c452cde2e0acc7c6a531ce3159c47b2233ce47c4d74d61583a2f185f"
+      "sha256": "c67b80305f88d34f254f34a03a401fc3b59845556483e2b36c78f5b50719bc03"
     },
     "scripts/manage_plugin.py": {
       "mode": "100644",
@@ -218,7 +218,7 @@
     },
     "scripts/mergegrounds.py": {
       "mode": "100755",
-      "sha256": "530455e7f6f91755b1276c6e8c526c5b3f4b0ff2f436bca0afbf566d32697b6f"
+      "sha256": "b5ef9ee9ebab0f402bcb1261604e9d8abf6e469b795defc327cce7b5a795fea4"
     },
     "scripts/scaffold_change.py": {
       "mode": "100755",
@@ -281,7 +281,7 @@
       "sha256": "e8b7ed1d367d6179ba5cc50f7560071ddb6944760dfb3db17fc12129db5c13dc"
     }
   },
-  "generated_at": "2026-09-06T10:42:09Z",
-  "git_commit": "5ab4011986a74fc9305fcfff9821c62ae1a17806",
+  "generated_at": "2026-09-06T10:48:07Z",
+  "git_commit": "832ff502558ee4313808803d8c2a19495e5e9933",
   "schema_version": 2
 }
